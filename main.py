@@ -1,16 +1,16 @@
-# This is a sample Python script.
-
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+# main python script for running ans solving Blackhole ODE
+# Written by
+#   - JaeHyun Lee: jaehyun.lee@wisc.edu
+#   - Joon Suk Huh: jhuh23@wisc.edu
+#   - Suenggwan Jo: sjo32@wisc.edu
+#   - Hyeong Kyu Choi: hyeongkyu.choi@wisc.edu
 
 
-# Press the green button in the gutter to run the script.
+
+
+
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    print('Hello CS714')
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
