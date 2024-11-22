@@ -3,6 +3,9 @@ from ray import Ray
 
 
 class Camera:
+    """
+    Simple Pinhole camera model for generating rays and rendering images.
+    """
     def __init__(self, pos, focal_length, look_at, img_res, up=np.array([0, 1, 0]), fov=90):
         self._pos = pos
         self._focal_length = focal_length

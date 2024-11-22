@@ -11,10 +11,7 @@ class Solver:
 
     def solve(self, ray):
         """
-        Determine the color of the ray.
-        """
-
-        """
+        TODO: Determine the color of the ray.
         Temporal implementation ^^b
         """
         for bh in self._scene:
