@@ -3,7 +3,7 @@ from PIL import Image
 
 
 class Skymap:
-    def __init__(self, image_path):
+    def __init__(self, image_path, r=1000):
         """
         Initializes the Skymap with the given image.
 
@@ -94,7 +94,6 @@ class Skymap:
         return x, y, z, colors
 
     def get_color_from_ray(self, ray):
-
         # Normalize the ray direction
         D = ray.direction / np.linalg.norm(ray.direction)
         x, y, z = D

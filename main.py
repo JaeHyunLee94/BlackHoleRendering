@@ -20,7 +20,7 @@ if __name__ == '__main__':
     # Rendering Three black hole radius is fixed to 1
     Schwarzschild_blackhole = BlackHole()
 
-    my_camera = Camera(np.array([5, 5, 5]), 1, np.array([0, 0, 0]), np.array([640, 480]))
+    my_camera = Camera(np.array([6, 6, 6]), 2, np.array([0, 0, 0]), np.array([320, 240]))
     print('Generating rays...')
     my_rays = my_camera.get_all_rays()
 
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     rays_flat = my_rays.flatten()
     for ray in tqdm(rays_flat, desc='Solving ODE', total=my_rays.size):
         # Solving ODE for each ray
-        my_solver.solve(ray)
+        my_solver.solve_forward_euler(ray)
 
     # Rendering the image from the rays
     print('Rendering...')
