@@ -21,17 +21,17 @@ if __name__ == '__main__':
     print('Hello CS714')
 
     # Ensure that position and look_at are float32
-    my_camera = Camera(np.array([2, 0, 0], dtype=np.float32), np.float32(1.0),
+    my_camera = Camera(np.array([2, 2, 2], dtype=np.float32), np.float32(1.0),
                        np.array([0, 0, 0], dtype=np.float32), np.array([3840, 2160]))
     print('Generating rays...')
     positions_np, directions_np = my_camera.get_all_rays()
 
-    image_path = 'texture/high_res/space_texture_high2.jpg'
+    image_path = 'texture/high_res/rycroft.jpg'
 
     # Initialize the Skymap
     skymap = Skymap(image_path)
 
-    my_solver = Solver(blackhole_radius = 1.0, skymap = skymap)
+    my_solver = Solver(blackhole_radius=1.0, skymap=skymap)
 
     # Initialize Taichi fields
     image_width = my_camera._image_width
