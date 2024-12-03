@@ -1,7 +1,8 @@
 import numpy as np
 from PIL import Image
+import taichi as ti
 
-
+@ti.data_oriented
 class Skymap:
     def __init__(self, image_path, r=1000):
         """
@@ -12,6 +13,9 @@ class Skymap:
         """
         self.image_path = image_path
         self.texture = self.load_texture(image_path)
+        self.img_height, self.img_width, _ = self.texture.shape
+        self.texture_field = ti.Vector.field(3, dtype=ti.f32, shape=(self.img_height, self.img_width))
+        self.texture_field.from_numpy(self.texture)
 
     def load_texture(self, image_path):
         """
@@ -25,95 +29,31 @@ class Skymap:
         """
         image = Image.open(image_path)
         image = image.convert('RGB')  # Ensure the image is in RGB format
-        texture = np.array(image)
+        # Normalize and convert to float32
+        texture = (np.array(image).astype(np.float32)) / 255.0
         print(f"Loaded texture with shape: {texture.shape}")
         return texture
 
-    def create_sphere(self, num_latitudes, num_longitudes):
-        """
-        Creates a sphere mesh grid.
-
-        Parameters:
-        - num_latitudes: int, number of latitude divisions.
-        - num_longitudes: int, number of longitude divisions.
-
-        Returns:
-        - x, y, z: numpy.ndarray, coordinates of the sphere's surface.
-        """
-        theta = np.linspace(0, np.pi, num_latitudes)
-        phi = np.linspace(0, 2 * np.pi, num_longitudes)
-        theta, phi = np.meshgrid(theta, phi)
-        x = np.sin(theta) * np.cos(phi)
-        y = np.sin(theta) * np.sin(phi)
-        z = np.cos(theta)
-        return x, y, z
-
-    def get_texture_coordinates(self, num_latitudes, num_longitudes):
-        """
-        Computes texture coordinates for mapping.
-
-        Parameters:
-        - num_latitudes: int, number of latitude divisions.
-        - num_longitudes: int, number of longitude divisions.
-
-        Returns:
-        - u, v: numpy.ndarray, texture coordinates.
-        """
-        theta = np.linspace(0, np.pi, num_latitudes)
-        phi = np.linspace(0, 2 * np.pi, num_longitudes)
-        theta, phi = np.meshgrid(theta, phi)
-        u = phi / (2 * np.pi)
-        v = theta / np.pi
-        return u, v
-
-    def map_texture_to_sphere(self, num_latitudes=100, num_longitudes=100):
-        """
-        Maps the texture onto the sphere.
-
-        Parameters:
-        - num_latitudes: int, optional, default=100.
-        - num_longitudes: int, optional, default=100.
-
-        Returns:
-        - x, y, z: numpy.ndarray, coordinates of the sphere's surface.
-        - colors: numpy.ndarray, color data from the texture.
-        """
-        # Get sphere coordinates
-        x, y, z = self.create_sphere(num_latitudes, num_longitudes)
-        # Get texture coordinates
-        u, v = self.get_texture_coordinates(num_latitudes, num_longitudes)
-        # Map u, v to image pixel coordinates
-        img_height, img_width, _ = self.texture.shape
-        tex_u = (u * (img_width - 1)).astype(int)
-        tex_v = ((1 - v) * (img_height - 1)).astype(int)  # Flip v to match image coordinate system
-        # Ensure indices are within bounds
-        tex_u = np.clip(tex_u, 0, img_width - 1)
-        tex_v = np.clip(tex_v, 0, img_height - 1)
-        # Get texture colors
-        colors = self.texture[tex_v, tex_u]
-        return x, y, z, colors
-
-    def get_color_from_ray(self, ray):
+    @ti.func
+    def get_color_from_ray_ti(self, D):
         # Normalize the ray direction
-        D = ray.direction / np.linalg.norm(ray.direction)
-        x, y, z = D
+        x, y, z = D[0], D[1], D[2]
 
         # Compute spherical coordinates
-        theta = np.arccos(z)
-        phi = np.arctan2(y, x)
+        theta = ti.acos(z)
+        phi = ti.atan2(y, x)
         if phi < 0:
-            phi += 2 * np.pi  # Ensure phi is in [0, 2π]
+            phi += 2 * ti.math.pi  # Use Taichi's pi
 
         # Compute texture coordinates (u, v)
-        u = phi / (2 * np.pi)
-        v = theta / np.pi
+        u = phi / (2 * ti.math.pi)
+        v = theta / ti.math.pi
 
         # Map (u, v) to texture pixel coordinates
-        img_height, img_width, _ = self.texture.shape
-        tex_u = int(u * (img_width - 1))
-        tex_v = int((1 - v) * (img_height - 1))  # Flip v to match image coordinate system
+        tex_u = ti.cast(u * (self.img_width - 1), ti.i32)
+        tex_v = ti.cast((1 - v) * (self.img_height - 1), ti.i32)  # Flip v to match image coordinate system
 
         # Ensure indices are within bounds
-        tex_u = np.clip(tex_u, 0, img_width - 1)
-        tex_v = np.clip(tex_v, 0, img_height - 1)
-        return self.texture[tex_v, tex_u]
+        tex_u = ti.min(ti.max(tex_u, 0), self.img_width - 1)
+        tex_v = ti.min(ti.max(tex_v, 0), self.img_height - 1)
+        return self.texture_field[tex_v, tex_u]
