@@ -25,8 +25,8 @@ if __name__ == '__main__':
     Schwarzschild_blackhole = BlackHole()
 
     # Ensure that position and look_at are float32
-    my_camera = Camera(np.array([4, 4, 4], dtype=np.float32), np.float32(2.0),
-                       np.array([0, 0, 0], dtype=np.float32), np.array([1920, 1080]))
+    my_camera = Camera(np.array([2, 0, 0], dtype=np.float32), np.float32(1.0),
+                       np.array([0, 0, 0], dtype=np.float32), np.array([3840, 2160]))
     print('Generating rays...')
     positions_np, directions_np = my_camera.get_all_rays()
 
