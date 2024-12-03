@@ -20,7 +20,7 @@ if __name__ == '__main__':
     # Rendering Three black hole radius is fixed to 1
     Schwarzschild_blackhole = BlackHole()
 
-    my_camera = Camera(np.array([6, 6, 6]), 2, np.array([0, 0, 0]), np.array([320, 240]))
+    my_camera = Camera(np.array([4, 4, 4]), 2, np.array([0, 0, 0]), np.array([640, 480]))
     print('Generating rays...')
     my_rays = my_camera.get_all_rays()
 
