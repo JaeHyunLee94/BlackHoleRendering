@@ -17,11 +17,8 @@ from skymap import Skymap
 if __name__ == '__main__':
     print('Hello CS714')
 
-    # Rendering Three black holes (For now these are just spheres)
-    bh1 = BlackHole(np.array([0, 2, 3]), 1.4)
-    bh2 = BlackHole(np.array([1, 1, 1]), 1)
-    bh3 = BlackHole(np.array([4, 0, 1]), 2)
-    scene = [bh1, bh2, bh3]
+    # Rendering Three black hole radius is fixed to 1
+    Schwarzschild_blackhole = BlackHole()
 
     my_camera = Camera(np.array([5, 5, 5]), 1, np.array([0, 0, 0]), np.array([640, 480]))
     print('Generating rays...')
@@ -32,7 +29,7 @@ if __name__ == '__main__':
     # Initialize the Skymap
     skymap = Skymap(image_path)
 
-    my_solver = Solver(scene, skymap)
+    my_solver = Solver(Schwarzschild_blackhole, skymap)
 
     rays_flat = my_rays.flatten()
     for ray in tqdm(rays_flat, desc='Solving ODE', total=my_rays.size):
