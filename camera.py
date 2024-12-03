@@ -1,5 +1,4 @@
 import numpy as np
-from ray import Ray
 
 class Camera:
     """
