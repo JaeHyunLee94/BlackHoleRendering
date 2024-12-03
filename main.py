@@ -9,7 +9,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from blackhole import BlackHole
 from camera import Camera
 from solver import Solver
 from skymap import Skymap
@@ -20,9 +19,6 @@ ti.init(arch=ti.gpu)  # Use GPU for acceleration; use ti.cpu if GPU is not avail
 
 if __name__ == '__main__':
     print('Hello CS714')
-
-    # Rendering Three black hole radius is fixed to 1
-    Schwarzschild_blackhole = BlackHole()
 
     # Ensure that position and look_at are float32
     my_camera = Camera(np.array([4, 4, 4], dtype=np.float32), np.float32(2.0),
@@ -35,7 +31,7 @@ if __name__ == '__main__':
     # Initialize the Skymap
     skymap = Skymap(image_path)
 
-    my_solver = Solver(Schwarzschild_blackhole, skymap)
+    my_solver = Solver(blackhole_radius = 1.0, skymap = skymap)
 
     # Initialize Taichi fields
     image_width = my_camera._image_width
