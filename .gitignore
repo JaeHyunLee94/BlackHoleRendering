@@ -9,6 +9,7 @@ __pycache__/
 result.png
 # C extensions
 *.so
+**/.DS_Store
 
 # Distribution / packaging
 .Python

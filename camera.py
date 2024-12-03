@@ -93,7 +93,7 @@ class Camera:
 
         for i in range(self._image_width):
             for j in range(self._image_height):
-                self._image[i, j] = rays[i, j].color
+                self._image[i, j] = rays[i, j].color/255.0
 
         # Ensure pixel values are within [0, 1]
         image = np.clip(self._image, 0, 1)

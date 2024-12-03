@@ -1,4 +1,5 @@
 # main python script for running and solving Blackhole ODE
+
 # Written by
 #   - JaeHyun Lee: jaehyun.lee@wisc.edu
 #   - Joon Suk Huh: jhuh23@wisc.edu
@@ -11,6 +12,7 @@ from tqdm import tqdm
 from blackhole import BlackHole
 from camera import Camera
 from solver import Solver
+from skymap import Skymap
 
 if __name__ == '__main__':
     print('Hello CS714')
@@ -21,11 +23,16 @@ if __name__ == '__main__':
     bh3 = BlackHole(np.array([4, 0, 1]), 2)
     scene = [bh1, bh2, bh3]
 
-    my_camera = Camera(np.array([5, 5, 5]), 1, np.array([0, 0, 0]), np.array([720, 480]))
+    my_camera = Camera(np.array([5, 5, 5]), 1, np.array([0, 0, 0]), np.array([640, 480]))
     print('Generating rays...')
     my_rays = my_camera.get_all_rays()
 
-    my_solver = Solver(scene)
+    image_path = 'texture/high_res/space_texture_high2.jpg'
+
+    # Initialize the Skymap
+    skymap = Skymap(image_path)
+
+    my_solver = Solver(scene, skymap)
 
     rays_flat = my_rays.flatten()
     for ray in tqdm(rays_flat, desc='Solving ODE', total=my_rays.size):
@@ -37,6 +44,7 @@ if __name__ == '__main__':
     img = my_camera.render(my_rays)
     print('Image resolution: ', img.shape)
 
-    plt.imshow(img)
+    plt.imshow(np.transpose(img, (1, 0, 2)))
     plt.axis('off')
+    plt.savefig('result.png')
     plt.show()
