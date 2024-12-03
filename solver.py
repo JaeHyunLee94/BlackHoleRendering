@@ -3,14 +3,13 @@ import taichi as ti
 
 @ti.data_oriented
 class Solver:
-    def __init__(self, blackhole, skymap=None):
-        self.blackhole = blackhole
+    def __init__(self, blackhole_radius, skymap=None):
+        self.blackhole_radius = blackhole_radius
         self.skymap = skymap
 
     @ti.kernel
     def solve_forward_euler(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
-        blackhole_pos = ti.Vector([self.blackhole.pos[0], self.blackhole.pos[1], self.blackhole.pos[2]])
-        blackhole_radius = self.blackhole.radius
+        blackhole_radius = self.blackhole_radius
         max_iter = 1000
         delta_lambda = ti.cast(0.05, ti.f32)  # Ensure delta_lambda is float32
 
