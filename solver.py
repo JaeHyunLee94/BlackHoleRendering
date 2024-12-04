@@ -5,9 +5,9 @@ import taichi as ti
 def rk4_f(pos, dir_, L_square):
     # function for RK4
     r = pos.norm()
-    r_cube = r ** 3
+    r_fourth = r ** 4
     one_point_five = ti.cast(1.5, ti.f32)
-    return (L_square * pos / r_cube) * (1 - one_point_five / r)
+    return (L_square * pos / r_fourth) * (1 - one_point_five / r)
 
 @ti.data_oriented
 class Solver:
@@ -28,10 +28,10 @@ class Solver:
             for iter in range(max_iter):
                 new_pos = pos + delta_lambda * dir_
                 r = new_pos.norm()
-                r_cube = r ** 3
+                r_fourth = r ** 4
                 # Ensure constants are float32
                 one_point_five = ti.cast(1.5, ti.f32)
-                constant = (L_square / r_cube) * (1 - one_point_five / r)
+                constant = (L_square / r_fourth) * (1 - one_point_five / r)
                 new_dir = dir_ + delta_lambda * constant * pos
 
                 pos = new_pos
@@ -102,9 +102,9 @@ class Solver:
 
             # Half-step velocity update
             r = pos.norm()
-            r_cube = r ** 3
+            r_fourth = r ** 4
             one_point_five = ti.cast(1.5, ti.f32)
-            constant = (L_square / r_cube) * (1 - one_point_five / r)
+            constant = (L_square / r_fourth) * (1 - one_point_five / r)
             dir_ = dir_ + 0.5 * delta_lambda * constant * pos
 
             for iter in range(max_iter):
@@ -113,8 +113,8 @@ class Solver:
 
                 # Recalculate constants with new position
                 r = pos.norm()
-                r_cube = r ** 3
-                constant = (L_square / r_cube) * (1 - one_point_five / r)
+                r_fourth = r ** 4
+                constant = (L_square / r_fourth) * (1 - one_point_five / r)
 
                 # Full-step velocity update
                 dir_ = dir_ + delta_lambda * constant * pos
