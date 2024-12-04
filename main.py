@@ -39,8 +39,7 @@ def main():
         "-fov",
         type=float,
         default=90,
-        help="Field of View (FoV) in degrees (float between 0 and 180) (default: 90)",
-        choices=range(0, 181)  # Restrict range between 0 and 180
+        help="Field of View (FoV) in degrees (float between 0 and 180) (default: 90)"
     )
 
     # Resolution (string: '4k' or 'fhd')
@@ -89,7 +88,7 @@ def main():
 
     # Ensure that position and look_at are float32
     my_camera = Camera(np.array(args.pov, dtype=np.float32), np.float32(args.focal),
-                       np.array([0, 0, 0], dtype=np.float32), resol, fov=np.float32(args.fov))
+                       np.array([0, 0, 0], dtype=np.float32), resol, fov=np.float32(args.fov % 180))
     print('Generating rays...')
     positions, directions = my_camera.get_all_rays()
 
