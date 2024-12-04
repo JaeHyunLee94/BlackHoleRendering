@@ -1,6 +1,8 @@
 import numpy as np
 import taichi as ti
 
+from scene import Scene
+
 @ti.func
 def rk4_f(pos, dir_, L_square):
     # function for RK4
@@ -11,9 +13,8 @@ def rk4_f(pos, dir_, L_square):
 
 @ti.data_oriented
 class Solver:
-    def __init__(self, blackhole_radius, skymap=None):
-        self.blackhole_radius = blackhole_radius
-        self.skymap = skymap
+    def __init__(self, scene: Scene):
+        self.scene = scene
 
     @ti.kernel
     def solve_forward_euler(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
@@ -36,7 +37,7 @@ class Solver:
 
                 pos = new_pos
                 dir_ = new_dir
-                if r < self.blackhole_radius:
+                if r < self.scene.blackhole_r:
                     event_horizon_hit = True
                     break
             positions[i, j] = pos
@@ -45,7 +46,7 @@ class Solver:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
             else:
                 D = dir_.normalized()
-                colors[i, j] = self.skymap.get_color_from_ray_ti(D)
+                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)
 
     @ti.kernel
     def solve_rk4(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
@@ -77,7 +78,7 @@ class Solver:
 
                 # Check if the ray hits the event horizon
                 r = ti.sqrt(pos.dot(pos))
-                if r < self.blackhole_radius:
+                if r < self.scene.blackhole_r:
                     event_horizon_hit = True
                     break
 
@@ -87,7 +88,7 @@ class Solver:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
             else:
                 D = dir_.normalized()
-                colors[i, j] = self.skymap.get_color_from_ray_ti(D)
+                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)
 
     @ti.kernel
     def solve_leapfrog(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
@@ -120,7 +121,7 @@ class Solver:
                 dir_ = dir_ + delta_lambda * constant * pos
 
                 # Check if it hits the event horizon
-                if r < self.blackhole_radius:
+                if r < self.scene.blackhole_r:
                     event_horizon_hit = True
                     break
 
@@ -131,4 +132,4 @@ class Solver:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
             else:
                 D = dir_.normalized()
-                colors[i, j] = self.skymap.get_color_from_ray_ti(D)
+                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)

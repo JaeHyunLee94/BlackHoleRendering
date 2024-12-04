@@ -8,11 +8,11 @@
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 
 from camera import Camera
 from solver import Solver
 from skymap import Skymap
+from scene import Scene
 
 import taichi as ti
 
@@ -96,10 +96,10 @@ def main():
     print('Generating rays...')
     positions, directions = my_camera.get_all_rays()
 
-    # Initialize the Skymap
-    skymap = Skymap(args.texture)
-
-    my_solver = Solver(blackhole_radius=1.0, skymap=skymap)
+    # Initialize the Scene
+    scene = Scene(blackhole_r =  ti.cast(1.0, ti.f32), accretion_r1 = ti.cast(1.5, ti.f32), 
+                  accretion_r2 = ti.cast(2.0, ti.f32), accretion_temp = ti.cast(400., ti.f32), skymap = Skymap(args.texture))
+    my_solver = Solver(scene)
 
     # Initialize Taichi fields
     image_width = my_camera._image_width
