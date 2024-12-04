@@ -3,7 +3,7 @@ import taichi as ti
 
 @ti.data_oriented
 class Camera:
-    def __init__(self, pos, focal_length, look_at, img_res, up=np.array([0, 1, 0], dtype=np.float32), fov=90):
+    def __init__(self, pos, focal_length, look_at, img_res, up=np.array([0, 0, 1], dtype=np.float32), fov=90):
         self._pos = pos.astype(np.float32)
         self._focal_length = np.float32(focal_length)
         self._look_at = look_at.astype(np.float32)
