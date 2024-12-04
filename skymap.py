@@ -36,7 +36,6 @@ class Skymap:
 
     @ti.func
     def get_color_from_ray_ti(self, D):
-        # Normalize the ray direction
         x, y, z = D[0], D[1], D[2]
 
         # Compute spherical coordinates
@@ -51,7 +50,8 @@ class Skymap:
 
         # Map (u, v) to texture pixel coordinates
         tex_u = ti.cast(u * (self.img_width - 1), ti.i32)
-        tex_v = ti.cast((1 - v) * (self.img_height - 1), ti.i32)  # Flip v to match image coordinate system
+        # tex_v = ti.cast((1 - v) * (self.img_height - 1), ti.i32)  # Flip v to match image coordinate system
+        tex_v = ti.cast(v * (self.img_height - 1), ti.i32) # Test
 
         # Ensure indices are within bounds
         tex_u = ti.min(ti.max(tex_u, 0), self.img_width - 1)
