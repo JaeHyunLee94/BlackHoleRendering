@@ -4,11 +4,10 @@ import taichi as ti
 @ti.func
 def rk4_f(pos, dir_, L_square):
     # function for RK4
-    r_square = pos.dot(pos)
-    r_fourth = r_square * r_square
-    r = ti.sqrt(r_square)
+    r = pos.norm()
+    r_cube = r ** 3
     one_point_five = ti.cast(1.5, ti.f32)
-    return (L_square * pos / r_fourth) * (1 - one_point_five / r)
+    return (L_square * pos / r_cube) * (1 - one_point_five / r)
 
 @ti.data_oriented
 class Solver:
@@ -28,12 +27,11 @@ class Solver:
             event_horizon_hit = False
             for iter in range(max_iter):
                 new_pos = pos + delta_lambda * dir_
-                r_square = new_pos.dot(new_pos)
-                r_fourth = r_square * r_square
-                r = ti.sqrt(r_square)
+                r = new_pos.norm()
+                r_cube = r ** 3
                 # Ensure constants are float32
                 one_point_five = ti.cast(1.5, ti.f32)
-                constant = (L_square / r_fourth) * (1 - one_point_five / r)
+                constant = (L_square / r_cube) * (1 - one_point_five / r)
                 new_dir = dir_ + delta_lambda * constant * pos
 
                 pos = new_pos
@@ -103,11 +101,10 @@ class Solver:
             event_horizon_hit = False
 
             # Half-step velocity update
-            r_square = pos.dot(pos)
-            r_fourth = r_square * r_square
-            r = ti.sqrt(r_square)
+            r = pos.norm()
+            r_cube = r ** 3
             one_point_five = ti.cast(1.5, ti.f32)
-            constant = (L_square / r_fourth) * (1 - one_point_five / r)
+            constant = (L_square / r_cube) * (1 - one_point_five / r)
             dir_ = dir_ + 0.5 * delta_lambda * constant * pos
 
             for iter in range(max_iter):
@@ -115,10 +112,9 @@ class Solver:
                 pos = pos + delta_lambda * dir_
 
                 # Recalculate constants with new position
-                r_square = pos.dot(pos)
-                r_fourth = r_square * r_square
-                r = ti.sqrt(r_square)
-                constant = (L_square / r_fourth) * (1 - one_point_five / r)
+                r = pos.norm()
+                r_cube = r ** 3
+                constant = (L_square / r_cube) * (1 - one_point_five / r)
 
                 # Full-step velocity update
                 dir_ = dir_ + delta_lambda * constant * pos

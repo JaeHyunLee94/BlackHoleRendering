@@ -88,7 +88,6 @@ def main():
     else:
         resol = np.array([1920, 1080])
 
-    print(args.pov)
     print('Welcome to Math/CS714 Project')
 
     # Ensure that position and look_at are float32
