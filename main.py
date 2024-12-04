@@ -72,6 +72,11 @@ def main():
         help="Use CPU for rendering (default: use GPU)"
     )
 
+    # Texture file path (string)
+    parser.add_argument("-output", "-o", type=str, 
+                        default='result.png',
+                        help="Output file name. (deafult: result.png)")
+
     args = parser.parse_args()
     if args.cpu:
         ti.init(arch=ti.cpu)  # Use CPU for acceleration.
@@ -119,7 +124,7 @@ def main():
 
     plt.imshow(np.transpose(img, (1, 0, 2)))
     plt.axis('off')
-    plt.savefig('result.png')
+    plt.savefig(args.output)
     plt.show()
 
 if __name__ == '__main__':
