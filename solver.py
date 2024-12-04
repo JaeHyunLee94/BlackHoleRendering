@@ -26,6 +26,7 @@ class Solver:
             dir_ = directions[i, j]
             L_square = dir_.cross(pos).norm() ** 2
             event_horizon_hit = False
+            accretion_disk_hit = False # test
             for iter in range(max_iter):
                 new_pos = pos + delta_lambda * dir_
                 r = new_pos.norm()
@@ -37,13 +38,26 @@ class Solver:
 
                 pos = new_pos
                 dir_ = new_dir
+
+                # Accretion disk test
+                if ti.abs(pos[2])<=0.05 and pos[:2].norm() >= self.scene.accretion_r1 and pos[:2].norm() <= self.scene.accretion_r2:
+                    accretion_disk_hit = True
+                    break
+
                 if r < self.scene.blackhole_r:
                     event_horizon_hit = True
                     break
             positions[i, j] = pos
             directions[i, j] = dir_
+            # if event_horizon_hit:
+            #     colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
+            # else:
+            #     D = dir_.normalized()
+            #     colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
+            elif accretion_disk_hit:
+                colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
             else:
                 D = dir_.normalized()
                 colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)

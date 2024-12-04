@@ -60,7 +60,7 @@ def main():
     parser.add_argument(
         "-integrator", "-i",
         type=str,
-        default='rk4',
+        default='euler',
         choices=["euler", "rk4", "leapfrog"],
         help="Integrators: 'euler', 'rk4', 'leapfrog'. (default: rk4)"
     )
