@@ -5,7 +5,7 @@ from scene import Scene
 
 # function for RK4
 @ti.func
-def rk4_f(pos, dir_, L_square):
+def rk4_f(pos, L_square):
     r = pos.norm()
     r_fourth = r ** 4
     one_point_five = ti.cast(1.5, ti.f32)
@@ -17,8 +17,11 @@ class Solver:
         self.scene = scene
         self.delta_lambda = delta_lambda
 
+    # Forward Euler method
     @ti.kernel
     def solve_forward_euler(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
+
+        one_point_five = ti.cast(1.5, ti.f32)
 
         for i, j in positions:
             pos = positions[i, j]
@@ -27,12 +30,12 @@ class Solver:
 
             event_horizon_hit = False
             accretion_disk_hit = False
+
             while True:
                 new_pos = pos + self.delta_lambda * dir_
                 r = new_pos.norm()
                 r_fourth = r ** 4
                 # Ensure constants are float32
-                one_point_five = ti.cast(1.5, ti.f32)
                 constant = (L_square / r_fourth) * (1 - one_point_five / r)
                 new_dir = dir_ + self.delta_lambda * constant * pos
 
@@ -40,9 +43,10 @@ class Solver:
                 dir_ = new_dir
 
                 # Check for event horizon or accretion disk hit
-                # if ti.abs(pos[2])<=0.05 and pos[:2].norm() >= self.scene.accretion_r1 and pos[:2].norm() <= self.scene.accretion_r2:
-                #     accretion_disk_hit = True
-                #     break
+                if ti.abs(pos[2])<=0.1 and pos[:2].norm() >= self.scene.accretion_r1 and pos[:2].norm() <= self.scene.accretion_r2:
+                    accretion_disk_hit = True
+                    break
+            
                 if r < self.scene.blackhole_r:
                     event_horizon_hit = True
                     break
@@ -54,11 +58,12 @@ class Solver:
 
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
-            # elif self.accretion_disk_hit:
-            #     colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
+            elif accretion_disk_hit:
+                colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
             else:
                  colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
 
+    # Runge-Kutta 4-step method
     @ti.kernel
     def solve_rk4(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
 
@@ -72,16 +77,16 @@ class Solver:
             while True:
                 # RK4 integration for position
                 k1_pos = self.delta_lambda * dir_
-                k1_dir = self.delta_lambda * rk4_f(pos, dir_, L_square)
+                k1_dir = self.delta_lambda * rk4_f(pos, L_square)
 
                 k2_pos = self.delta_lambda * (dir_ + 0.5 * k1_dir)
-                k2_dir = self.delta_lambda * rk4_f(pos + 0.5 * k1_pos, dir_ + 0.5 * k1_dir, L_square)
+                k2_dir = self.delta_lambda * rk4_f(pos + 0.5 * k1_pos, L_square)
 
                 k3_pos = self.delta_lambda * (dir_ + 0.5 * k2_dir)
-                k3_dir = self.delta_lambda * rk4_f(pos + 0.5 * k2_pos, dir_ + 0.5 * k2_dir, L_square)
+                k3_dir = self.delta_lambda * rk4_f(pos + 0.5 * k2_pos, L_square)
                 
                 k4_pos = self.delta_lambda * (dir_ + k3_dir)
-                k4_dir = self.delta_lambda * rk4_f(pos + k3_pos, dir_ + k3_dir, L_square)
+                k4_dir = self.delta_lambda * rk4_f(pos + k3_pos, L_square)
 
                 pos = pos + (k1_pos + 2 * k2_pos + 2 * k3_pos + k4_pos) / 6
                 dir_ = dir_ + (k1_dir + 2 * k2_dir + 2 * k3_dir + k4_dir) / 6
@@ -102,8 +107,11 @@ class Solver:
             else:
                  colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
 
+    # Leapfrog method
     @ti.kernel
     def solve_leapfrog(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
+        
+        one_point_five = ti.cast(1.5, ti.f32)
 
         for i, j in positions:
             pos = positions[i, j]
@@ -113,7 +121,6 @@ class Solver:
             # Half-step velocity update
             r = pos.norm()
             r_fourth = r ** 4
-            one_point_five = ti.cast(1.5, ti.f32)
             constant = (L_square / r_fourth) * (1 - one_point_five / r)
             dir_ = dir_ + 0.5 * self.delta_lambda * constant * pos
 
@@ -147,6 +154,7 @@ class Solver:
             else:
                  colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
 
+    # Adams-Bashforth 2-step method
     @ti.kernel
     def solve_ab2(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
 
@@ -176,7 +184,6 @@ class Solver:
                 constant = (L_square / r_fourth) * (1 - one_point_five / r)
                 f_dir_n = constant * pos
 
-                # Adams-Bashforth 2-step method
                 pos = pos + self.delta_lambda * (three_over_two * f_pos_n - one_over_two * f_pos_prev)
                 dir_ = dir_ + self.delta_lambda * (three_over_two * f_dir_n - one_over_two * f_dir_prev)
 
@@ -199,7 +206,8 @@ class Solver:
             else:
                  colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
                 
-                
+    
+    # Adams-Moulton four-step method
     @ti.kernel
     def solve_am4(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
 
