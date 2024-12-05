@@ -61,7 +61,7 @@ def main():
         "-integrator", "-i",
         type=str,
         default='euler',
-        choices=["euler", "rk4", "leapfrog"],
+        choices=["euler", "rk4", "leapfrog", "multistep"],
         help="Integrators: 'euler', 'rk4', 'leapfrog'. (default: rk4)"
     )
 
@@ -115,6 +115,8 @@ def main():
         my_solver.solve_rk4(positions, directions, colors)
     elif args.integrator == 'leapfrog':
         my_solver.solve_leapfrog(positions, directions, colors)
+    elif args.integrator == 'multistep':
+        my_solver.solve_multistep(positions, directions, colors)
 
     # Rendering the image from the rays
     print('Rendering...')

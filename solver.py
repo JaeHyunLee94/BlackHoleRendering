@@ -150,3 +150,62 @@ class Solver:
             else:
                 D = dir_.normalized()
                 colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)
+
+    @ti.kernel
+    def solve_multistep(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
+        max_iter = 1000
+        delta_lambda = ti.cast(0.05, ti.f32)
+        three_over_two = ti.cast(1.5, ti.f32)
+        one_over_two = ti.cast(0.5, ti.f32)
+        one_point_five = ti.cast(1.5, ti.f32)
+
+        for i, j in positions:
+            pos = positions[i, j]
+            dir_ = directions[i, j]
+            L_square = dir_.cross(pos).norm() ** 2
+            event_horizon_hit = False
+            accretion_disk_hit = False
+
+            # Initialize f_{n-1}
+            f_pos_prev = dir_
+            r = pos.norm()
+            r_fourth = r ** 4
+            constant = (L_square / r_fourth) * (1 - one_point_five / r)
+            f_dir_prev = constant * pos
+
+            for iter in range(max_iter):
+                # Compute f_n
+                f_pos_n = dir_
+                r = pos.norm()
+                r_fourth = r ** 4
+                constant = (L_square / r_fourth) * (1 - one_point_five / r)
+                f_dir_n = constant * pos
+
+                # Adams-Bashforth 2-step method
+                pos = pos + delta_lambda * (three_over_two * f_pos_n - one_over_two * f_pos_prev)
+                dir_ = dir_ + delta_lambda * (three_over_two * f_dir_n - one_over_two * f_dir_prev)
+
+                # Update previous function evaluations
+                f_pos_prev = f_pos_n
+                f_dir_prev = f_dir_n
+
+                # Check for event horizon or accretion disk hit
+                # if ti.abs(pos[2]) <= 0.05 and self.scene.accretion_r1 <= pos[:2].norm() <= self.scene.accretion_r2:
+                #     accretion_disk_hit = True
+                #     break
+
+                r = pos.norm()
+                if r < self.scene.blackhole_r:
+                    event_horizon_hit = True
+                    break
+
+            # Store results
+            positions[i, j] = pos
+            directions[i, j] = dir_
+            if event_horizon_hit:
+                colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
+            # elif accretion_disk_hit:
+            #     colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
+            else:
+                D = dir_.normalized()
+                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)
