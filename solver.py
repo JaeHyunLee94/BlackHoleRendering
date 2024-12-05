@@ -13,12 +13,8 @@ def rk4_f(pos, dir_, L_square):
 
 @ti.data_oriented
 class Solver:
-    def __init__(self, scene: Scene, positions_shape):
-       
+    def __init__(self, scene: Scene):
         self.scene = scene
-        # Initialize f_pos_prev and f_dir_prev with the correct shape
-        self.f_pos_prev = ti.Vector.field(3, dtype=ti.f32, shape=positions_shape)
-        self.f_dir_prev = ti.Vector.field(3, dtype=ti.f32, shape=positions_shape)
 
     @ti.kernel
     def solve_forward_euler(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
@@ -174,10 +170,6 @@ class Solver:
             constant = (L_square / r_fourth) * (1 - one_point_five / r)
             f_dir_prev = constant * pos
 
-            # Store f_{n-1} for the first iteration
-            self.f_pos_prev[i, j] = f_pos_prev
-            self.f_dir_prev[i, j] = f_dir_prev
-
             for iter in range(max_iter):
                 # Compute f_n
                 f_pos_n = dir_
@@ -187,12 +179,12 @@ class Solver:
                 f_dir_n = constant * pos
 
                 # Adams-Bashforth 2-step method
-                pos = pos + delta_lambda * (three_over_two * f_pos_n - one_over_two * self.f_pos_prev[i, j])
-                dir_ = dir_ + delta_lambda * (three_over_two * f_dir_n - one_over_two * self.f_dir_prev[i, j])
+                pos = pos + delta_lambda * (three_over_two * f_pos_n - one_over_two * f_pos_prev)
+                dir_ = dir_ + delta_lambda * (three_over_two * f_dir_n - one_over_two * f_dir_prev)
 
                 # Update previous function evaluations
-                self.f_pos_prev[i, j] = f_pos_n
-                self.f_dir_prev[i, j] = f_dir_n
+                f_pos_prev = f_pos_n
+                f_dir_prev = f_dir_n
 
                 # Check for event horizon or accretion disk hit
                 if ti.abs(pos[2]) <= 0.05 and self.scene.accretion_r1 <= pos[:2].norm() <= self.scene.accretion_r2:
