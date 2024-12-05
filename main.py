@@ -98,7 +98,8 @@ def main():
 
     # Initialize the Scene
     scene = Scene(blackhole_r =  ti.cast(1.0, ti.f32), accretion_r1 = ti.cast(1.5, ti.f32), 
-                  accretion_r2 = ti.cast(2.0, ti.f32), accretion_temp = ti.cast(400., ti.f32), skymap = Skymap(args.texture))
+                  accretion_r2 = ti.cast(2.0, ti.f32), accretion_temp = ti.cast(400., ti.f32), 
+                  skymap = Skymap(args.texture, r_max=10))
     my_solver = Solver(scene)
 
     # Initialize Taichi fields

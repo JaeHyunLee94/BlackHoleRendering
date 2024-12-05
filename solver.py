@@ -3,9 +3,9 @@ import taichi as ti
 
 from scene import Scene
 
+# function for RK4
 @ti.func
 def rk4_f(pos, dir_, L_square):
-    # function for RK4
     r = pos.norm()
     r_fourth = r ** 4
     one_point_five = ti.cast(1.5, ti.f32)
@@ -18,7 +18,7 @@ class Solver:
 
     @ti.kernel
     def solve_forward_euler(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
-        max_iter = 1000
+
         delta_lambda = ti.cast(0.05, ti.f32)  # Ensure delta_lambda is float32
 
         for i, j in positions:
@@ -27,7 +27,8 @@ class Solver:
             L_square = dir_.cross(pos).norm() ** 2
             event_horizon_hit = False
             accretion_disk_hit = False # test
-            for iter in range(max_iter):
+
+            while True:
                 new_pos = pos + delta_lambda * dir_
                 r = new_pos.norm()
                 r_fourth = r ** 4
@@ -39,32 +40,29 @@ class Solver:
                 pos = new_pos
                 dir_ = new_dir
 
-                # Accretion disk test
-                if ti.abs(pos[2])<=0.05 and pos[:2].norm() >= self.scene.accretion_r1 and pos[:2].norm() <= self.scene.accretion_r2:
-                    accretion_disk_hit = True
-                    break
-
+                # Check for event horizon or accretion disk hit
+                # if ti.abs(pos[2])<=0.05 and pos[:2].norm() >= self.scene.accretion_r1 and pos[:2].norm() <= self.scene.accretion_r2:
+                #     accretion_disk_hit = True
+                #     break
                 if r < self.scene.blackhole_r:
                     event_horizon_hit = True
                     break
+                elif r > self.scene.skymap.r_max:
+                    break
+
             positions[i, j] = pos
             directions[i, j] = dir_
-            # if event_horizon_hit:
-            #     colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
-            # else:
-            #     D = dir_.normalized()
-            #     colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)
+
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
-            elif accretion_disk_hit:
-                colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
+            # elif accretion_disk_hit:
+            #     colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
             else:
-                D = dir_.normalized()
-                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)
+                 colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
 
     @ti.kernel
     def solve_rk4(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
-        max_iter = 1000
+
         delta_lambda = ti.cast(0.05, ti.f32)  # Ensure delta_lambda is float32
 
         for i, j in positions:
@@ -73,7 +71,7 @@ class Solver:
             L_square = dir_.cross(pos).norm() ** 2
             event_horizon_hit = False
 
-            for iter in range(max_iter):
+            while True:
                 # RK4 integration for position
                 k1_pos = delta_lambda * dir_
                 k1_dir = delta_lambda * rk4_f(pos, dir_, L_square)
@@ -90,23 +88,27 @@ class Solver:
                 pos = pos + (k1_pos + 2 * k2_pos + 2 * k3_pos + k4_pos) / 6
                 dir_ = dir_ + (k1_dir + 2 * k2_dir + 2 * k3_dir + k4_dir) / 6
 
-                # Check if the ray hits the event horizon
+                # Check if the ray hits the event horizon or the skymap
                 r = ti.sqrt(pos.dot(pos))
                 if r < self.scene.blackhole_r:
                     event_horizon_hit = True
                     break
+                elif r > self.scene.skymap.r_max:
+                    break
 
             positions[i, j] = pos
             directions[i, j] = dir_
+
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
+            # elif accretion_disk_hit:
+            #     colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
             else:
-                D = dir_.normalized()
-                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)
+                 colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
 
     @ti.kernel
     def solve_leapfrog(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
-        max_iter = 1000
+
         delta_lambda = ti.cast(0.05, ti.f32)  # Ensure delta_lambda is float32
 
         for i, j in positions:
@@ -122,7 +124,8 @@ class Solver:
             constant = (L_square / r_fourth) * (1 - one_point_five / r)
             dir_ = dir_ + 0.5 * delta_lambda * constant * pos
 
-            for iter in range(max_iter):
+            #for iter in range(max_iter):
+            while True:
                 # Full-step position update
                 pos = pos + delta_lambda * dir_
 
@@ -134,23 +137,25 @@ class Solver:
                 # Full-step velocity update
                 dir_ = dir_ + delta_lambda * constant * pos
 
-                # Check if it hits the event horizon
+                # Check if the ray hits the event horizon or the skymap
                 if r < self.scene.blackhole_r:
                     event_horizon_hit = True
+                    break
+                elif r > self.scene.skymap.r_max:
                     break
 
             # Store results
             positions[i, j] = pos
             directions[i, j] = dir_
+
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
             else:
-                D = dir_.normalized()
-                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)
+                 colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
 
     @ti.kernel
     def solve_multistep(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
-        max_iter = 1000
+
         delta_lambda = ti.cast(0.05, ti.f32)
         three_over_two = ti.cast(1.5, ti.f32)
         one_over_two = ti.cast(0.5, ti.f32)
@@ -161,7 +166,7 @@ class Solver:
             dir_ = directions[i, j]
             L_square = dir_.cross(pos).norm() ** 2
             event_horizon_hit = False
-            accretion_disk_hit = False
+            # accretion_disk_hit = False
 
             # Initialize f_{n-1}
             f_pos_prev = dir_
@@ -170,7 +175,7 @@ class Solver:
             constant = (L_square / r_fourth) * (1 - one_point_five / r)
             f_dir_prev = constant * pos
 
-            for iter in range(max_iter):
+            while True:
                 # Compute f_n
                 f_pos_n = dir_
                 r = pos.norm()
@@ -186,14 +191,11 @@ class Solver:
                 f_pos_prev = f_pos_n
                 f_dir_prev = f_dir_n
 
-                # Check for event horizon or accretion disk hit
-                # if ti.abs(pos[2]) <= 0.05 and self.scene.accretion_r1 <= pos[:2].norm() <= self.scene.accretion_r2:
-                #     accretion_disk_hit = True
-                #     break
-
-                r = pos.norm()
+                # Check if the ray hits the event horizon or the skymap
                 if r < self.scene.blackhole_r:
                     event_horizon_hit = True
+                    break
+                elif r > self.scene.skymap.r_max:
                     break
 
             # Store results
@@ -201,8 +203,5 @@ class Solver:
             directions[i, j] = dir_
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
-            # elif accretion_disk_hit:
-            #     colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
             else:
-                D = dir_.normalized()
-                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)
+                 colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
