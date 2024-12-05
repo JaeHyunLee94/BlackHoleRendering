@@ -97,9 +97,9 @@ def main():
     positions, directions = my_camera.get_all_rays()
 
     # Initialize the Scene
-    scene = Scene(blackhole_r =  ti.cast(1.0, ti.f32), accretion_r1 = ti.cast(1.5, ti.f32), 
+    scene = Scene(blackhole_r =  ti.cast(1.0, ti.f32), accretion_r1 = ti.cast(1.2, ti.f32), 
                   accretion_r2 = ti.cast(2.0, ti.f32), accretion_temp = ti.cast(400., ti.f32), 
-                  skymap = Skymap(args.texture, r_max=10))
+                  skymap = Skymap(args.texture, r_max=100))
     my_solver = Solver(scene, h = ti.cast(0.5, ti.f32))
 
     # Initialize Taichi fields
