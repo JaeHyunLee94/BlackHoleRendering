@@ -20,7 +20,7 @@ class Solver:
 
     @ti.kernel
     def solve_forward_euler(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
-        max_iter = 1000
+        max_iter = 10000
         delta_lambda = ti.cast(0.05, ti.f32)  # Ensure delta_lambda is float32
 
         for i, j in positions:
@@ -49,6 +49,7 @@ class Solver:
 
                 if r < self.scene.blackhole_r:
                     event_horizon_hit = True
+                    colors[i, j] = 0.5 * ti.Vector([1.0, 1.0, 1.0])
                     break
             positions[i, j] = pos
             directions[i, j] = dir_
@@ -60,7 +61,9 @@ class Solver:
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
             elif accretion_disk_hit:
-                colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
+                D = dir_.normalized()
+
+                colors[i, j] += 0.5 * self.scene.skymap.get_color_from_ray_ti(D)
             else:
                 D = dir_.normalized()
                 colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)
