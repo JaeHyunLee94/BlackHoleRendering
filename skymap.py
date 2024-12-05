@@ -4,7 +4,7 @@ import taichi as ti
 
 @ti.data_oriented
 class Skymap:
-    def __init__(self, image_path, r=1000):
+    def __init__(self, image_path, r_max):
         """
         Initializes the Skymap with the given image.
 
@@ -16,6 +16,7 @@ class Skymap:
         self.img_height, self.img_width, _ = self.texture.shape
         self.texture_field = ti.Vector.field(3, dtype=ti.f32, shape=(self.img_height, self.img_width))
         self.texture_field.from_numpy(self.texture)
+        self.r_max = r_max
 
     def load_texture(self, image_path):
         """
@@ -36,6 +37,7 @@ class Skymap:
 
     @ti.func
     def get_color_from_ray_ti(self, D):
+        D = D.normalized()
         x, y, z = D[0], D[1], D[2]
 
         # Compute spherical coordinates
