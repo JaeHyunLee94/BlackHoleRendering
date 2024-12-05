@@ -61,7 +61,7 @@ def main():
         "-integrator", "-i",
         type=str,
         default='euler',
-        choices=["euler", "rk4", "leapfrog", "ab2", "am4"],
+        choices=["euler", "rk4", "leapfrog", "ab2"],
         help="Integrators: 'euler', 'rk4', 'leapfrog'. (default: rk4)"
     )
 
@@ -100,7 +100,7 @@ def main():
     scene = Scene(blackhole_r =  ti.cast(1.0, ti.f32), accretion_r1 = ti.cast(1.5, ti.f32), 
                   accretion_r2 = ti.cast(2.0, ti.f32), accretion_temp = ti.cast(400., ti.f32), 
                   skymap = Skymap(args.texture, r_max=10))
-    my_solver = Solver(scene, delta_lambda = ti.cast(0.5, ti.f32))
+    my_solver = Solver(scene, h = ti.cast(0.5, ti.f32))
 
     # Initialize Taichi fields
     image_width = my_camera._image_width
@@ -118,8 +118,6 @@ def main():
         my_solver.solve_leapfrog(positions, directions, colors)
     elif args.integrator == 'ab2':
         my_solver.solve_ab2(positions, directions, colors)
-    elif args.integrator == 'am4':
-        my_solver.solve_am4(positions, directions, colors)
 
     # Rendering the image from the rays
     print('Rendering...')

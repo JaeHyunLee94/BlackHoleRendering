@@ -13,9 +13,9 @@ def rk4_f(pos, L_square):
 
 @ti.data_oriented
 class Solver:
-    def __init__(self, scene: Scene, delta_lambda):
+    def __init__(self, scene: Scene, h):
         self.scene = scene
-        self.delta_lambda = delta_lambda
+        self.h = h
 
     # Forward Euler method
     @ti.kernel
@@ -32,12 +32,12 @@ class Solver:
             accretion_disk_hit = False
 
             while True:
-                new_pos = pos + self.delta_lambda * dir_
+                new_pos = pos + self.h * dir_
                 r = new_pos.norm()
                 r_fourth = r ** 4
                 # Ensure constants are float32
                 constant = (L_square / r_fourth) * (1 - one_point_five / r)
-                new_dir = dir_ + self.delta_lambda * constant * pos
+                new_dir = dir_ + self.h * constant * pos
 
                 pos = new_pos
                 dir_ = new_dir
@@ -76,17 +76,17 @@ class Solver:
             accretion_disk_hit = False
             while True:
                 # RK4 integration for position
-                k1_pos = self.delta_lambda * dir_
-                k1_dir = self.delta_lambda * rk4_f(pos, L_square)
+                k1_pos = self.h * dir_
+                k1_dir = self.h * rk4_f(pos, L_square)
 
-                k2_pos = self.delta_lambda * (dir_ + 0.5 * k1_dir)
-                k2_dir = self.delta_lambda * rk4_f(pos + 0.5 * k1_pos, L_square)
+                k2_pos = self.h * (dir_ + 0.5 * k1_dir)
+                k2_dir = self.h * rk4_f(pos + 0.5 * k1_pos, L_square)
 
-                k3_pos = self.delta_lambda * (dir_ + 0.5 * k2_dir)
-                k3_dir = self.delta_lambda * rk4_f(pos + 0.5 * k2_pos, L_square)
+                k3_pos = self.h * (dir_ + 0.5 * k2_dir)
+                k3_dir = self.h * rk4_f(pos + 0.5 * k2_pos, L_square)
                 
-                k4_pos = self.delta_lambda * (dir_ + k3_dir)
-                k4_dir = self.delta_lambda * rk4_f(pos + k3_pos, L_square)
+                k4_pos = self.h * (dir_ + k3_dir)
+                k4_dir = self.h * rk4_f(pos + k3_pos, L_square)
 
                 pos = pos + (k1_pos + 2 * k2_pos + 2 * k3_pos + k4_pos) / 6
                 dir_ = dir_ + (k1_dir + 2 * k2_dir + 2 * k3_dir + k4_dir) / 6
@@ -122,13 +122,13 @@ class Solver:
             r = pos.norm()
             r_fourth = r ** 4
             constant = (L_square / r_fourth) * (1 - one_point_five / r)
-            dir_ = dir_ + 0.5 * self.delta_lambda * constant * pos
+            dir_ = dir_ + 0.5 * self.h * constant * pos
 
             event_horizon_hit = False
             accretion_disk_hit = False
             while True:
                 # Full-step position update
-                pos = pos + self.delta_lambda * dir_
+                pos = pos + self.h * dir_
 
                 # Recalculate constants with new position
                 r = pos.norm()
@@ -136,7 +136,7 @@ class Solver:
                 constant = (L_square / r_fourth) * (1 - one_point_five / r)
 
                 # Full-step velocity update
-                dir_ = dir_ + self.delta_lambda * constant * pos
+                dir_ = dir_ + self.h * constant * pos
 
                 # Check if the ray hits the event horizon or the skymap
                 if r < self.scene.blackhole_r:
@@ -184,8 +184,8 @@ class Solver:
                 constant = (L_square / r_fourth) * (1 - one_point_five / r)
                 f_dir_n = constant * pos
 
-                pos = pos + self.delta_lambda * (three_over_two * f_pos_n - one_over_two * f_pos_prev)
-                dir_ = dir_ + self.delta_lambda * (three_over_two * f_dir_n - one_over_two * f_dir_prev)
+                pos = pos + self.h * (three_over_two * f_pos_n - one_over_two * f_pos_prev)
+                dir_ = dir_ + self.h * (three_over_two * f_dir_n - one_over_two * f_dir_prev)
 
                 # Update previous function evaluations
                 f_pos_prev = f_pos_n
@@ -207,105 +207,111 @@ class Solver:
                  colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
                 
     
-    # Adams-Moulton four-step method
-    @ti.kernel
-    def solve_am4(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
+# Adams-Moulton four-step method
+@ti.kernel
+def solve_am4(positions: ti.template(), directions: ti.template(), colors: ti.template()):
+    
+    # Coefficients for Adams-Bashforth 4 (Predictor)
+    ab4_c0 = ti.cast(55.0 / 24.0, ti.f32)
+    ab4_c1 = ti.cast(-59.0 / 24.0, ti.f32)
+    ab4_c2 = ti.cast(37.0 / 24.0, ti.f32)
+    ab4_c3 = ti.cast(-9.0 / 24.0, ti.f32)
 
-        nine_over_forty = ti.cast(9 / 40.0, ti.f32)
-        thirtytwo_over_forty = ti.cast(32 / 40.0, ti.f32)
-        twelve_over_forty = ti.cast(12 / 40.0, ti.f32)
-        seven_over_forty = ti.cast(7 / 40.0, ti.f32)
+    # Coefficients for Adams-Moulton 4 (Corrector)
+    am4_c0 = ti.cast(9.0 / 24.0, ti.f32)
+    am4_c1 = ti.cast(19.0 / 24.0, ti.f32)
+    am4_c2 = ti.cast(-5.0 / 24.0, ti.f32)
+    am4_c3 = ti.cast(1.0 / 24.0, ti.f32)
 
-        for i, j in positions:
-            pos = positions[i, j]
-            dir_ = directions[i, j]
-            L_square = dir_.cross(pos).norm() ** 2
+    nine_over_forty = ti.cast(9.0 / 40.0, ti.f32)
 
-            # Initialize f_{n-3}, f_{n-2}, f_{n-1}
-            f_pos_prev3 = dir_
-            r = pos.norm()
-            r_fourth = r ** 4
-            constant = (L_square / r_fourth) * (1 - nine_over_forty / r)
-            f_dir_prev3 = constant * pos
+    # For each pixel/ray
+    for i, j in positions:
+        pos = positions[i, j]
+        dir_ = directions[i, j]
 
-            pos_prev2 = pos
-            dir_prev2 = dir_
-            r = pos_prev2.norm()
-            r_fourth = r ** 4
-            constant = (L_square / r_fourth) * (1 - nine_over_forty / r)
-            f_pos_prev2 = dir_prev2
-            f_dir_prev2 = constant * pos_prev2
+        # Load the previously computed f-values:
+        f_pos_nm3 = f_pos_prev[i, j, 0]
+        f_pos_nm2 = f_pos_prev[i, j, 1]
+        f_pos_nm1 = f_pos_prev[i, j, 2]
+        f_pos_n   = f_pos_prev[i, j, 3]
 
-            pos_prev1 = pos
-            dir_prev1 = dir_
-            r = pos_prev1.norm()
-            r_fourth = r ** 4
-            constant = (L_square / r_fourth) * (1 - nine_over_forty / r)
-            f_pos_prev1 = dir_prev1
-            f_dir_prev1 = constant * pos_prev1
+        f_dir_nm3 = f_dir_prev[i, j, 0]
+        f_dir_nm2 = f_dir_prev[i, j, 1]
+        f_dir_nm1 = f_dir_prev[i, j, 2]
+        f_dir_n   = f_dir_prev[i, j, 3]
 
-            event_horizon_hit = False
-            accretion_disk_hit = False
-            while True:
-                # Predictor step (Adams-Bashforth as predictor)
-                f_pos_predictor = dir_
-                r = pos.norm()
-                r_fourth = r ** 4
-                constant = (L_square / r_fourth) * (1 - nine_over_forty / r)
-                f_dir_predictor = constant * pos
+        event_horizon_hit = False
+        accretion_disk_hit = False
 
-                pos_predictor = pos + self.delta_lambda * (
-                    thirtytwo_over_forty * f_pos_prev1
-                    - twelve_over_forty * f_pos_prev2
-                    + seven_over_forty * f_pos_prev3
-                )
-                dir_predictor = dir_ + self.delta_lambda * (
-                    thirtytwo_over_forty * f_dir_prev1
-                    - twelve_over_forty * f_dir_prev2
-                    + seven_over_forty * f_dir_prev3
-                )
+        while True:
+            # Predictor step (AB4)
+            pos_predictor = pos + self.h * (
+                ab4_c0 * f_pos_n +
+                ab4_c1 * f_pos_nm1 +
+                ab4_c2 * f_pos_nm2 +
+                ab4_c3 * f_pos_nm3
+            )
+            dir_predictor = dir_ + self.h * (
+                ab4_c0 * f_dir_n +
+                ab4_c1 * f_dir_nm1 +
+                ab4_c2 * f_dir_nm2 +
+                ab4_c3 * f_dir_nm3
+            )
 
-                # Corrector step (Adams-Moulton)
-                r = pos_predictor.norm()
-                r_fourth = r ** 4
-                constant = (L_square / r_fourth) * (1 - nine_over_forty / r)
-                f_pos_corrector = dir_predictor
-                f_dir_corrector = constant * pos_predictor
+            # Evaluate f at the predicted values
+            r_pred = pos_predictor.norm()
+            L_square = dir_predictor.cross(pos_predictor).norm()**2
+            r_fourth = r_pred**4
+            constant = (L_square / r_fourth) * (1 - nine_over_forty / r_pred)
 
-                pos_new = pos + self.delta_lambda * (
-                    nine_over_forty * f_pos_corrector
-                    + thirtytwo_over_forty * f_pos_prev1
-                    - twelve_over_forty * f_pos_prev2
-                    + seven_over_forty * f_pos_prev3
-                )
-                dir_new = dir_ + self.delta_lambda * (
-                    nine_over_forty * f_dir_corrector
-                    + thirtytwo_over_forty * f_dir_prev1
-                    - twelve_over_forty * f_dir_prev2
-                    + seven_over_forty * f_dir_prev3
-                )
+            f_pos_pred = dir_predictor
+            f_dir_pred = constant * pos_predictor
 
-                pos, dir_ = pos_new, dir_new
+            # Corrector step (AM4)
+            pos_new = pos + h * (
+                am4_c0 * f_pos_pred +
+                am4_c1 * f_pos_n +
+                am4_c2 * f_pos_nm1 +
+                am4_c3 * f_pos_nm2
+            )
 
-                # Update previous function evaluations
-                f_pos_prev3 = f_pos_prev2
-                f_dir_prev3 = f_dir_prev2
-                f_pos_prev2 = f_pos_prev1
-                f_dir_prev2 = f_dir_prev1
-                f_pos_prev1 = f_pos_predictor
-                f_dir_prev1 = f_dir_predictor
+            dir_new = dir_ + h * (
+                am4_c0 * f_dir_pred +
+                am4_c1 * f_dir_n +
+                am4_c2 * f_dir_nm1 +
+                am4_c3 * f_dir_nm2
+            )
 
-                r = pos.norm()
-                if r < self.scene.blackhole_r:
-                    event_horizon_hit = True
-                    break
-                elif r > self.scene.skymap.r_max:
-                    break
+            # Update pos and dir
+            pos, dir_ = pos_new, dir_new
 
-            # Store results
-            positions[i, j] = pos
-            directions[i, j] = dir_
-            if event_horizon_hit:
-                colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
-            else:
-                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
+            # Check conditions for breaking
+            r_new = pos.norm()
+            if r_new < self.scene.blackhole_r:
+                event_horizon_hit = True
+                break
+            elif r_new > self.scene.skymap.r_max:
+                break
+
+            # Update the history arrays for the next step:
+            # Shift the old f-values and add the newly computed f_values (f_pos_pred, f_dir_pred)
+            f_pos_nm3 = f_pos_nm2
+            f_pos_nm2 = f_pos_nm1
+            f_pos_nm1 = f_pos_n
+            f_pos_n = f_pos_pred
+
+            f_dir_nm3 = f_dir_nm2
+            f_dir_nm2 = f_dir_nm1
+            f_dir_nm1 = f_dir_n
+            f_dir_n = f_dir_pred
+
+        # Store results
+        positions[i, j] = pos
+        directions[i, j] = dir_
+
+        # Determine final color
+        if event_horizon_hit:
+            colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
+        else:
+            colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
