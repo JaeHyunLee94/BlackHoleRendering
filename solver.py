@@ -3,6 +3,7 @@ import taichi as ti
 
 from scene import Scene
 
+
 @ti.func
 def rk4_f(pos, dir_, L_square):
     # function for RK4
@@ -10,6 +11,7 @@ def rk4_f(pos, dir_, L_square):
     r_fourth = r ** 4
     one_point_five = ti.cast(1.5, ti.f32)
     return (L_square * pos / r_fourth) * (1 - one_point_five / r)
+
 
 @ti.data_oriented
 class Solver:
@@ -26,7 +28,7 @@ class Solver:
             dir_ = directions[i, j]
             L_square = dir_.cross(pos).norm() ** 2
             event_horizon_hit = False
-            accretion_disk_hit = False # test
+            accretion_disk_hit = False  # test
             for iter in range(max_iter):
                 new_pos = pos + delta_lambda * dir_
                 r = new_pos.norm()
@@ -40,7 +42,8 @@ class Solver:
                 dir_ = new_dir
 
                 # Accretion disk test
-                if ti.abs(pos[2])<=0.05 and pos[:2].norm() >= self.scene.accretion_r1 and pos[:2].norm() <= self.scene.accretion_r2:
+                if ti.abs(pos[2]) <= 0.05 and pos[:2].norm() >= self.scene.accretion_r1 and pos[
+                                                                                            :2].norm() <= self.scene.accretion_r2:
                     accretion_disk_hit = True
                     break
 
@@ -83,7 +86,7 @@ class Solver:
 
                 k3_pos = delta_lambda * (dir_ + 0.5 * k2_dir)
                 k3_dir = delta_lambda * rk4_f(pos + 0.5 * k2_pos, dir_ + 0.5 * k2_dir, L_square)
-                
+
                 k4_pos = delta_lambda * (dir_ + k3_dir)
                 k4_dir = delta_lambda * rk4_f(pos + k3_pos, dir_ + k3_dir, L_square)
 

@@ -16,8 +16,8 @@ from scene import Scene
 
 import taichi as ti
 
-def main():
 
+def main():
     # Create an argument parser
     parser = argparse.ArgumentParser(description="Parse rendering parameters.")
 
@@ -30,9 +30,9 @@ def main():
     )
 
     # Focal length (float)
-    parser.add_argument( "-focal", "-f", type=float, 
-        default = 1.5,
-        help="Focal length (default: 1.5)")
+    parser.add_argument("-focal", "-f", type=float,
+                        default=1.5,
+                        help="Focal length (default: 1.5)")
 
     # Field of View (FoV) (float between 0 and 180)
     parser.add_argument(
@@ -44,7 +44,7 @@ def main():
 
     # Resolution (string: '4k' or 'fhd')
     parser.add_argument(
-        "-resolution", "-r", 
+        "-resolution", "-r",
         type=str,
         default='4k',
         choices=["4k", "fhd"],
@@ -52,10 +52,10 @@ def main():
     )
 
     # Texture file path (string)
-    parser.add_argument("-texture", "-t", type=str, 
+    parser.add_argument("-texture", "-t", type=str,
                         default='texture/high_res/space_texture_high1.jpg',
                         help="Texture file path (string)")
-    
+
     # Integrator (string: 'euler' or 'rk4')
     parser.add_argument(
         "-integrator", "-i",
@@ -73,7 +73,7 @@ def main():
     )
 
     # Texture file path (string)
-    parser.add_argument("-output", "-o", type=str, 
+    parser.add_argument("-output", "-o", type=str,
                         default='result.png',
                         help="Output file name. (deafult: result.png)")
 
@@ -81,7 +81,7 @@ def main():
     if args.cpu:
         ti.init(arch=ti.cpu)  # Use CPU for acceleration.
     else:
-        ti.init(arch=ti.gpu) # Use GPU for acceleration.
+        ti.init(arch=ti.gpu)  # Use GPU for acceleration.
 
     if args.resolution == '4k':
         resol = np.array([3840, 2160])
@@ -97,8 +97,8 @@ def main():
     positions, directions = my_camera.get_all_rays()
 
     # Initialize the Scene
-    scene = Scene(blackhole_r =  ti.cast(1.0, ti.f32), accretion_r1 = ti.cast(1.5, ti.f32), 
-                  accretion_r2 = ti.cast(2.0, ti.f32), accretion_temp = ti.cast(400., ti.f32), skymap = Skymap(args.texture))
+    scene = Scene(blackhole_r=ti.cast(1.0, ti.f32), accretion_r1=ti.cast(1.5, ti.f32),
+                  accretion_r2=ti.cast(2.0, ti.f32), accretion_temp=ti.cast(400., ti.f32), skymap=Skymap(args.texture))
     my_solver = Solver(scene)
 
     # Initialize Taichi fields
@@ -125,6 +125,7 @@ def main():
     plt.axis('off')
     plt.savefig(args.output)
     plt.show()
+
 
 if __name__ == '__main__':
     main()
