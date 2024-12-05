@@ -187,9 +187,9 @@ class Solver:
                 f_dir_prev = f_dir_n
 
                 # Check for event horizon or accretion disk hit
-                if ti.abs(pos[2]) <= 0.05 and self.scene.accretion_r1 <= pos[:2].norm() <= self.scene.accretion_r2:
-                    accretion_disk_hit = True
-                    break
+                # if ti.abs(pos[2]) <= 0.05 and self.scene.accretion_r1 <= pos[:2].norm() <= self.scene.accretion_r2:
+                #     accretion_disk_hit = True
+                #     break
 
                 r = pos.norm()
                 if r < self.scene.blackhole_r:
@@ -201,8 +201,8 @@ class Solver:
             directions[i, j] = dir_
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
-            elif accretion_disk_hit:
-                colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
+            # elif accretion_disk_hit:
+            #     colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
             else:
                 D = dir_.normalized()
                 colors[i, j] = self.scene.skymap.get_color_from_ray_ti(D)
