@@ -24,10 +24,12 @@ class Solver:
     def solve_forward_euler(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
 
         one_point_five = ti.cast(1.5, ti.f32)
+        ad_hit_coord = ti.Vector([0.0, 0.0])
 
         for i, j in positions:
             pos = positions[i, j]
             dir_ = directions[i, j]
+            dir_ = dir_.normalized()
             L_square = dir_.cross(pos).norm() ** 2
 
             event_horizon_hit = False
@@ -41,14 +43,16 @@ class Solver:
                 constant = (L_square / r_fourth) * (1 - one_point_five / r)
                 new_dir = dir_ + self.h * constant * pos
 
+                # Check for event horizon or accretion disk hit
+                if (pos[2] > 0 and new_pos[2] < 0) or (pos[2] < 0 and new_pos[2] > 0):
+                    t = new_pos[2] / (new_pos[2] - pos[2] + 1e-7)
+                    ad_hit_coord = t * pos[:2] + (1 - t) * new_pos[:2]
+                    if ad_hit_coord.norm() <= self.scene.accretion_r2 and ad_hit_coord.norm() >= self.scene.accretion_r1:
+                        accretion_disk_hit = True
+                    break
+
                 pos = new_pos
                 dir_ = new_dir
-
-                # Check for event horizon or accretion disk hit
-                if ti.abs(pos[2]) <= 0.1 and pos[:2].norm() >= self.scene.accretion_r1 and pos[
-                                                                                           :2].norm() <= self.scene.accretion_r2:
-                    accretion_disk_hit = True
-                    break
 
                 if r < self.scene.blackhole_r:
                     event_horizon_hit = True
