@@ -3,14 +3,12 @@ import taichi as ti
 
 from scene import Scene
 
-
 # function for RK4
 @ti.func
 def rk4_f(pos, L_square):
     r = pos.norm()
     one_point_five = ti.cast(1.5, ti.f32)
-    return - (L_square * pos * one_point_five) / (r ** 6)
-
+    return - ( L_square * pos * one_point_five ) / ( r ** 6 )
 
 @ti.data_oriented
 class Solver:
@@ -37,10 +35,11 @@ class Solver:
             while True:
                 new_pos = pos + self.h * dir_
                 r = new_pos.norm()
-                constant = - (L_square * one_point_five) / (r ** 6)
+                constant = - ( L_square * one_point_five ) / ( r ** 6 )
                 new_dir = dir_ + self.h * constant * pos
 
                 # Check for event horizon or accretion disk hit
+
                 if (pos[2] > 0 and new_pos[2] < 0) or (pos[2] < 0 and new_pos[2] > 0):
                     t = -pos[2] / (new_pos[2] - pos[2] + 1e-7)
                     ad_hit_coord = pos[:2] + t * (new_pos[:2] - pos[:2])
@@ -56,7 +55,7 @@ class Solver:
 
                 pos = new_pos
                 dir_ = new_dir
-
+            
                 if r < self.scene.blackhole_r:
                     event_horizon_hit = True
                     break
@@ -74,6 +73,7 @@ class Solver:
                 colors[i, j] = (self.scene.accretion_alpha) * self.scene.get_accretion_disk_color_ti(
                     accretion_disk_hit_x, accretion_disk_hit_y) + (
                                        1 - self.scene.accretion_alpha) * colors[i, j]
+
 
     # Runge-Kutta 4-step method
     @ti.kernel
@@ -97,7 +97,7 @@ class Solver:
 
                 k3_pos = self.h * (dir_ + 0.5 * k2_dir)
                 k3_dir = self.h * rk4_f(pos + 0.5 * k2_pos, L_square)
-
+                
                 k4_pos = self.h * (dir_ + k3_dir)
                 k4_dir = self.h * rk4_f(pos + k3_pos, L_square)
 
@@ -105,8 +105,8 @@ class Solver:
                 new_dir_ = dir_ + (k1_dir + 2 * k2_dir + 2 * k3_dir + k4_dir) / 6
 
                 # Check for event horizon or accretion disk hit
-                if (pos[2] > 0 and new_pos[2] < 0) or (pos[2] < 0 and new_pos[2] > 0):
-                    t = new_pos[2] / (new_pos[2] - pos[2] + 1e-7)
+                if ( pos[2] > 0 and new_pos[2] < 0 ) or ( pos[2] < 0 and new_pos[2] > 0 ):
+                    t = new_pos[2] / (new_pos[2] - pos[2])
                     ad_hit_coord = t * pos[:2] + (1 - t) * new_pos[:2]
                     if ad_hit_coord.norm() <= self.scene.accretion_r2 and ad_hit_coord.norm() >= self.scene.accretion_r1:
                         accretion_disk_hit = True
@@ -125,11 +125,11 @@ class Solver:
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
             else:
-                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
-                # colors[i, j] = self.scene.skymap.get_color_from_ray_ti(pos)
+                 colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
+                 #colors[i, j] = self.scene.skymap.get_color_from_ray_ti(pos)
 
             if accretion_disk_hit:
-                colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
+                 colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
 
     # Leapfrog method
     @ti.kernel
@@ -144,7 +144,7 @@ class Solver:
 
             # Half-step velocity update
             r = pos.norm()
-            constant = - (L_square * one_point_five) / (r ** 6)
+            constant = - ( L_square * one_point_five ) / ( r ** 6 )
             dir_ = dir_ + 0.5 * self.h * constant * pos
 
             event_horizon_hit = False
@@ -155,14 +155,14 @@ class Solver:
 
                 # Recalculate constants with new position
                 r = new_pos.norm()
-                constant = - (L_square * one_point_five) / (r ** 6)
+                constant = - ( L_square * one_point_five ) / ( r ** 6 )
 
                 # Full-step velocity update
                 new_dir_ = dir_ + self.h * constant * pos
 
                 # Check for event horizon or accretion disk hit
-                if (pos[2] > 0 and new_pos[2] < 0) or (pos[2] < 0 and new_pos[2] > 0):
-                    t = new_pos[2] / (new_pos[2] - pos[2] + 1e-7)
+                if ( pos[2] > 0 and new_pos[2] < 0 ) or ( pos[2] < 0 and new_pos[2] > 0 ):
+                    t = new_pos[2] / (new_pos[2] - pos[2])
                     ad_hit_coord = t * pos[:2] + (1 - t) * new_pos[:2]
                     if ad_hit_coord.norm() <= self.scene.accretion_r2 and ad_hit_coord.norm() >= self.scene.accretion_r1:
                         accretion_disk_hit = True
@@ -181,11 +181,11 @@ class Solver:
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
             else:
-                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
-                # colors[i, j] = self.scene.skymap.get_color_from_ray_ti(pos)
+                 colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
+                 #colors[i, j] = self.scene.skymap.get_color_from_ray_ti(pos)
 
             if accretion_disk_hit:
-                colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
+                 colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
 
     # Adams-Bashforth 2-step method
     @ti.kernel
@@ -203,7 +203,7 @@ class Solver:
             # Initialize f_{n-1}
             f_pos_prev = dir_
             r = pos.norm()
-            constant = - (L_square * one_point_five) / (r ** 6)
+            constant = - ( L_square * one_point_five ) / ( r ** 6 )
             f_dir_prev = constant * pos
 
             event_horizon_hit = False
@@ -212,21 +212,21 @@ class Solver:
                 # Compute f_n
                 f_pos_n = dir_
                 r = pos.norm()
-                constant = - (L_square * one_point_five) / (r ** 6)
+                constant = - ( L_square * one_point_five ) / ( r ** 6 )
                 f_dir_n = constant * pos
 
                 new_pos = pos + self.h * (three_over_two * f_pos_n - one_over_two * f_pos_prev)
                 new_dir_ = dir_ + self.h * (three_over_two * f_dir_n - one_over_two * f_dir_prev)
 
                 # Check for event horizon or accretion disk hit
-                if (pos[2] > 0 and new_pos[2] < 0) or (pos[2] < 0 and new_pos[2] > 0):
-                    t = new_pos[2] / (new_pos[2] - pos[2] + 1e-7)
+                if ( pos[2] > 0 and new_pos[2] < 0 ) or ( pos[2] < 0 and new_pos[2] > 0 ):
+                    t = new_pos[2] / (new_pos[2] - pos[2])
                     ad_hit_coord = t * pos[:2] + (1 - t) * new_pos[:2]
                     if ad_hit_coord.norm() <= self.scene.accretion_r2 and ad_hit_coord.norm() >= self.scene.accretion_r1:
                         accretion_disk_hit = True
 
                 pos = new_pos
-                dir_ = new_dir_
+                dir_ = new_dir_              
 
                 # Update previous function evaluations
                 f_pos_prev = f_pos_n
@@ -242,15 +242,15 @@ class Solver:
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
             else:
-                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
-                # colors[i, j] = self.scene.skymap.get_color_from_ray_ti(pos)
+                 colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
+                 #colors[i, j] = self.scene.skymap.get_color_from_ray_ti(pos)
 
             if accretion_disk_hit:
-                colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
+                 colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
 
     @ti.kernel
     def solve_am4(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
-
+        
         # Store coefficients as constants (arrays are now Taichi-compatible)
         coefficients_ab2 = ti.static([3 / 2.0, -1 / 2.0])  # Adams-Bashforth 2-step
         coefficients_ab3 = ti.static([23 / 12.0, -16 / 12.0, 5 / 12.0])  # Adams-Bashforth 3-step
@@ -327,14 +327,14 @@ class Solver:
                 new_dir_ = dir_ + self.h * f_dir_update
 
                 # Check for event horizon or accretion disk hit
-                if (pos[2] > 0 and new_pos[2] < 0) or (pos[2] < 0 and new_pos[2] > 0):
-                    t = new_pos[2] / (new_pos[2] - pos[2] + 1e-7)
+                if ( pos[2] > 0 and new_pos[2] < 0 ) or ( pos[2] < 0 and new_pos[2] > 0 ):
+                    t = new_pos[2] / (new_pos[2] - pos[2])
                     ad_hit_coord = t * pos[:2] + (1 - t) * new_pos[:2]
                     if ad_hit_coord.norm() <= self.scene.accretion_r2 and ad_hit_coord.norm() >= self.scene.accretion_r1:
                         accretion_disk_hit = True
 
                 pos = new_pos
-                dir_ = new_dir_
+                dir_ = new_dir_ 
 
                 # Shift previous function evaluations
                 for k in ti.static(range(3)):  # Reverse logic manually
@@ -355,8 +355,10 @@ class Solver:
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
             else:
-                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
-                # colors[i, j] = self.scene.skymap.get_color_from_ray_ti(pos)
+                 colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
+                 #colors[i, j] = self.scene.skymap.get_color_from_ray_ti(pos)
 
             if accretion_disk_hit:
-                colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
+
+                 colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
+
