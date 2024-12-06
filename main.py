@@ -56,6 +56,11 @@ def main():
                         default='texture/high_res/space_texture_high1.jpg',
                         help="Texture file path (string)")
 
+    # Accretion disk texture file path (string)
+    parser.add_argument("-at", type=str,
+                        default='texture/ad/adisk.jpg',
+                        help="Accretion disk texture file path (string)")
+
     # Integrator (string: 'euler' or 'rk4')
     parser.add_argument(
         "-integrator", "-i",
@@ -97,9 +102,11 @@ def main():
     positions, directions = my_camera.get_all_rays()
 
     # Initialize the Scene
-    scene = Scene(blackhole_r=ti.cast(1.0, ti.f32), accretion_r1=ti.cast(1.2, ti.f32),
-                  accretion_r2=ti.cast(2.5, ti.f32), accretion_temp=ti.cast(400., ti.f32),
+    scene = Scene(blackhole_r=ti.cast(1.0, ti.f32), accretion_r1=ti.cast(2, ti.f32),
+                  accretion_r2=ti.cast(6, ti.f32), accretion_temp=ti.cast(400., ti.f32),
+                  accretion_alpha=ti.cast(0.9, ti.f32),
                   skymap=Skymap(args.texture, r_max=10))
+    scene.set_accretion_disk_texture(args.at)
     my_solver = Solver(scene, h=ti.cast(0.1, ti.f32))
 
     # Initialize Taichi fields
