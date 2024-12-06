@@ -61,7 +61,7 @@ def main():
         "-integrator", "-i",
         type=str,
         default='euler',
-        choices=["euler", "rk4", "leapfrog", "ab2"],
+        choices=["euler", "rk4", "leapfrog", "ab2", "am4"],
         help="Integrators: 'euler', 'rk4', 'leapfrog'. (default: euler)"
     )
 
@@ -98,7 +98,7 @@ def main():
 
     # Initialize the Scene
     scene = Scene(blackhole_r =  ti.cast(1.0, ti.f32), accretion_r1 = ti.cast(1.2, ti.f32), 
-                  accretion_r2 = ti.cast(2.0, ti.f32), accretion_temp = ti.cast(400., ti.f32), 
+                  accretion_r2 = ti.cast(2.5, ti.f32), accretion_temp = ti.cast(400., ti.f32), 
                   skymap = Skymap(args.texture, r_max=10))
     my_solver = Solver(scene, h = ti.cast(0.1, ti.f32))
 
@@ -118,6 +118,8 @@ def main():
         my_solver.solve_leapfrog(positions, directions, colors)
     elif args.integrator == 'ab2':
         my_solver.solve_ab2(positions, directions, colors)
+    elif args.integrator == 'am4':
+        my_solver.solve_am4(positions, directions, colors)
 
     # Rendering the image from the rays
     print('Rendering...')
