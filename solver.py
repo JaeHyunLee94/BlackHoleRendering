@@ -9,8 +9,8 @@ def rk4_f(pos, L_square):
     r = pos.norm()
     r_fourth = r ** 4
     one_point_five = ti.cast(1.5, ti.f32)
-    return (L_square * pos / r_fourth) * (1 - one_point_five / r)
-    #return - ( L_square * one_point_five ) / ( r ** 6 )
+    #return (L_square * pos / r_fourth) * (1 - one_point_five / r)
+    return - ( L_square * pos * one_point_five ) / ( r ** 6 )
 
 @ti.data_oriented
 class Solver:
@@ -39,8 +39,8 @@ class Solver:
                 r = new_pos.norm()
                 r_fourth = r ** 4
                 # Ensure constants are float32
-                constant = (L_square / r_fourth) * (1 - one_point_five / r)
-                #constant = - ( L_square * one_point_five ) / ( r ** 6 )
+                #constant = (L_square / r_fourth) * (1 - one_point_five / r)
+                constant = - ( L_square * one_point_five ) / ( r ** 6 )
                 new_dir = dir_ + self.h * constant * pos
 
                 # Check for event horizon or accretion disk hit
