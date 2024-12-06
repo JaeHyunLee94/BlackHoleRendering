@@ -50,7 +50,7 @@ class Solver:
                 pos = new_pos
                 dir_ = new_dir
 
-                if tmp < 64 and self.get_Ls:
+                if tmp < 64 and self.get_Ls and i==0 and j==0:
                     new_L = dir_.cross(pos).norm() ** 2
                     self.Ls_field[tmp] = new_L
                     tmp += 1
@@ -118,7 +118,7 @@ class Solver:
                 pos = new_pos
                 dir_ = new_dir_
 
-                if tmp < 64 and self.get_Ls:
+                if tmp < 64 and self.get_Ls and i==0 and j==0:
                     new_L = dir_.cross(pos).norm() ** 2
                     self.Ls_field[tmp] = new_L
                     tmp += 1
@@ -173,7 +173,7 @@ class Solver:
                 dir_ = new_dir_
 
 
-                if tmp < 64 and self.get_Ls:
+                if tmp < 64 and self.get_Ls and i==0 and j==0:
                     new_L = dir_.cross(pos).norm() ** 2
                     self.Ls_field[tmp] = new_L
                     tmp += 1
@@ -238,7 +238,7 @@ class Solver:
                 dir_ = new_dir_              
 
 
-                if tmp < 64 and self.get_Ls:
+                if tmp < 64 and self.get_Ls and i==0 and j==0:
                     new_L = dir_.cross(pos).norm() ** 2
                     self.Ls_field[tmp] = new_L
                     tmp += 1
@@ -353,7 +353,7 @@ class Solver:
                 dir_ = new_dir_ 
 
 
-                if tmp < 64 and self.get_Ls:
+                if tmp < 64 and self.get_Ls and i==0 and j==0:
                     new_L = dir_.cross(pos).norm() ** 2
                     self.Ls_field[tmp] = new_L
                     tmp += 1
