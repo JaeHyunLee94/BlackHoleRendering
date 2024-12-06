@@ -8,9 +8,7 @@ from scene import Scene
 @ti.func
 def rk4_f(pos, L_square):
     r = pos.norm()
-    r_fourth = r ** 4
     one_point_five = ti.cast(1.5, ti.f32)
-    # return (L_square * pos / r_fourth) * (1 - one_point_five / r)
     return - (L_square * pos * one_point_five) / (r ** 6)
 
 
@@ -23,7 +21,6 @@ class Solver:
     # Forward Euler method
     @ti.kernel
     def solve_forward_euler(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
-
         one_point_five = ti.cast(1.5, ti.f32)
         ad_hit_coord = ti.Vector([0.0, 0.0])
 
@@ -39,17 +36,14 @@ class Solver:
             while True:
                 new_pos = pos + self.h * dir_
                 r = new_pos.norm()
-                r_fourth = r ** 4
-                # Ensure constants are float32
-                # constant = (L_square / r_fourth) * (1 - one_point_five / r)
                 constant = - (L_square * one_point_five) / (r ** 6)
                 new_dir = dir_ + self.h * constant * pos
 
                 # Check for event horizon or accretion disk hit
-                if (pos[2] > 0 > new_pos[2]) or (pos[2] < 0 < new_pos[2]):
+                if (pos[2] > 0 and new_pos[2] < 0) or (pos[2] < 0 and new_pos[2] > 0):
                     t = new_pos[2] / (new_pos[2] - pos[2] + 1e-7)
                     ad_hit_coord = t * pos[:2] + (1 - t) * new_pos[:2]
-                    if self.scene.accretion_r2 >= ad_hit_coord.norm() >= self.scene.accretion_r1:
+                    if ad_hit_coord.norm() <= self.scene.accretion_r2 and ad_hit_coord.norm() >= self.scene.accretion_r1:
                         accretion_disk_hit = True
 
                 pos = new_pos
@@ -73,6 +67,7 @@ class Solver:
     # Runge-Kutta 4-step method
     @ti.kernel
     def solve_rk4(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
+        ad_hit_coord = ti.Vector([0.0, 0.0])
 
         for i, j in positions:
             pos = positions[i, j]
@@ -106,7 +101,7 @@ class Solver:
                         accretion_disk_hit = True
 
                 # Check if the ray hits the event horizon or the skymap
-                r = ti.sqrt(pos.dot(pos))
+                r = pos.norm()
                 if r < self.scene.blackhole_r:
                     event_horizon_hit = True
                     break
@@ -128,8 +123,8 @@ class Solver:
     # Leapfrog method
     @ti.kernel
     def solve_leapfrog(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
-
         one_point_five = ti.cast(1.5, ti.f32)
+        ad_hit_coord = ti.Vector([0.0, 0.0])
 
         for i, j in positions:
             pos = positions[i, j]
@@ -138,8 +133,6 @@ class Solver:
 
             # Half-step velocity update
             r = pos.norm()
-            r_fourth = r ** 4
-            # constant = (L_square / r_fourth) * (1 - one_point_five / r)
             constant = - (L_square * one_point_five) / (r ** 6)
             dir_ = dir_ + 0.5 * self.h * constant * pos
 
@@ -151,8 +144,6 @@ class Solver:
 
                 # Recalculate constants with new position
                 r = new_pos.norm()
-                r_fourth = r ** 4
-                # constant = (L_square / r_fourth) * (1 - one_point_five / r)
                 constant = - (L_square * one_point_five) / (r ** 6)
 
                 # Full-step velocity update
@@ -188,10 +179,10 @@ class Solver:
     # Adams-Bashforth 2-step method
     @ti.kernel
     def solve_ab2(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
-
         three_over_two = ti.cast(1.5, ti.f32)
         one_over_two = ti.cast(0.5, ti.f32)
         one_point_five = ti.cast(1.5, ti.f32)
+        ad_hit_coord = ti.Vector([0.0, 0.0])
 
         for i, j in positions:
             pos = positions[i, j]
@@ -201,8 +192,6 @@ class Solver:
             # Initialize f_{n-1}
             f_pos_prev = dir_
             r = pos.norm()
-            r_fourth = r ** 4
-            # constant = (L_square / r_fourth) * (1 - one_point_five / r)
             constant = - (L_square * one_point_five) / (r ** 6)
             f_dir_prev = constant * pos
 
@@ -212,8 +201,6 @@ class Solver:
                 # Compute f_n
                 f_pos_n = dir_
                 r = pos.norm()
-                r_fourth = r ** 4
-                # constant = (L_square / r_fourth) * (1 - one_point_five / r)
                 constant = - (L_square * one_point_five) / (r ** 6)
                 f_dir_n = constant * pos
 
@@ -235,6 +222,119 @@ class Solver:
                 f_dir_prev = f_dir_n
 
                 # Check if the ray hits the event horizon or the skymap
+                if r < self.scene.blackhole_r:
+                    event_horizon_hit = True
+                    break
+                elif r > self.scene.skymap.r_max:
+                    break
+
+            if event_horizon_hit:
+                colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
+            else:
+                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(dir_)
+                # colors[i, j] = self.scene.skymap.get_color_from_ray_ti(pos)
+
+            if accretion_disk_hit:
+                colors[i, j] = ti.Vector([1.0, 1.0, 1.0])
+
+    @ti.kernel
+    def solve_am4(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
+
+        # Store coefficients as constants (arrays are now Taichi-compatible)
+        coefficients_ab2 = ti.static([3 / 2.0, -1 / 2.0])  # Adams-Bashforth 2-step
+        coefficients_ab3 = ti.static([23 / 12.0, -16 / 12.0, 5 / 12.0])  # Adams-Bashforth 3-step
+        coefficients_ab = ti.static([9 / 24.0, -19 / 24.0, 5 / 24.0, 1 / 24.0])  # Adams-Bashforth 4-step
+        coefficients_am = ti.static([9 / 24.0, 19 / 24.0, -5 / 24.0, -1 / 24.0])  # Adams-Moulton
+        ad_hit_coord = ti.Vector([0.0, 0.0])
+
+        for i, j in positions:
+            pos = positions[i, j]
+            dir_ = directions[i, j]
+            L_square = dir_.cross(pos).norm() ** 2
+
+            # Initialize function evaluations
+            f_pos_prev = [ti.Vector([0.0, 0.0, 0.0]) for _ in range(4)]
+            f_dir_prev = [ti.Vector([0.0, 0.0, 0.0]) for _ in range(4)]
+
+            # Step 1: Use Euler's method for the first step
+            f_pos_prev[0] = dir_
+            f_dir_prev[0] = rk4_f(pos, L_square)
+            pos = pos + self.h * f_pos_prev[0]
+            dir_ = dir_ + self.h * f_dir_prev[0]
+
+            # Step 2: Use Adams-Bashforth 2-step
+            f_pos_prev[1] = dir_
+            f_dir_prev[1] = rk4_f(pos, L_square)
+            f_pos_update = ti.Vector([0.0, 0.0, 0.0])
+            f_dir_update = ti.Vector([0.0, 0.0, 0.0])
+            for k in ti.static(range(2)):  # Use ti.static for Python-style loops
+                f_pos_update += coefficients_ab2[k] * f_pos_prev[1 - k]
+                f_dir_update += coefficients_ab2[k] * f_dir_prev[1 - k]
+            pos = pos + self.h * f_pos_update
+            dir_ = dir_ + self.h * f_dir_update
+
+            # Step 3: Use Adams-Bashforth 3-step
+            f_pos_prev[2] = dir_
+            f_dir_prev[2] = rk4_f(pos, L_square)
+            f_pos_update = ti.Vector([0.0, 0.0, 0.0])
+            f_dir_update = ti.Vector([0.0, 0.0, 0.0])
+            for k in ti.static(range(3)):
+                f_pos_update += coefficients_ab3[k] * f_pos_prev[2 - k]
+                f_dir_update += coefficients_ab3[k] * f_dir_prev[2 - k]
+            pos = pos + self.h * f_pos_update
+            dir_ = dir_ + self.h * f_dir_update
+
+            # Start Adams-Moulton 4-step method
+            event_horizon_hit = False
+            accretion_disk_hit = False
+            while True:
+                # Predictor step: Adams-Bashforth 4-step
+                f_pos_predictor = ti.Vector([0.0, 0.0, 0.0])
+                f_dir_predictor = ti.Vector([0.0, 0.0, 0.0])
+                for k in ti.static(range(4)):
+                    f_pos_predictor += coefficients_ab[k] * f_pos_prev[3 - k]
+                    f_dir_predictor += coefficients_ab[k] * f_dir_prev[3 - k]
+
+                pos_predictor = pos + self.h * f_pos_predictor
+                dir_predictor = dir_ + self.h * f_dir_predictor
+
+                # Corrector step: Adams-Moulton
+                f_pos_corrector = dir_predictor
+                f_dir_corrector = rk4_f(pos_predictor, L_square)
+
+                f_pos_update = ti.Vector([0.0, 0.0, 0.0])
+                f_dir_update = ti.Vector([0.0, 0.0, 0.0])
+                for k in ti.static(range(4)):
+                    if k < 3:
+                        f_pos_update += coefficients_am[k] * f_pos_prev[3 - k]
+                        f_dir_update += coefficients_am[k] * f_dir_prev[3 - k]
+                    else:
+                        f_pos_update += coefficients_am[k] * f_pos_corrector
+                        f_dir_update += coefficients_am[k] * f_dir_corrector
+
+                new_pos = pos + self.h * f_pos_update
+                new_dir_ = dir_ + self.h * f_dir_update
+
+                # Check for event horizon or accretion disk hit
+                if (pos[2] > 0 and new_pos[2] < 0) or (pos[2] < 0 and new_pos[2] > 0):
+                    t = new_pos[2] / (new_pos[2] - pos[2] + 1e-7)
+                    ad_hit_coord = t * pos[:2] + (1 - t) * new_pos[:2]
+                    if ad_hit_coord.norm() <= self.scene.accretion_r2 and ad_hit_coord.norm() >= self.scene.accretion_r1:
+                        accretion_disk_hit = True
+
+                pos = new_pos
+                dir_ = new_dir_
+
+                # Shift previous function evaluations
+                for k in ti.static(range(3)):  # Reverse logic manually
+                    f_pos_prev[3 - k] = f_pos_prev[2 - k]
+                    f_dir_prev[3 - k] = f_dir_prev[2 - k]
+
+                f_pos_prev[0] = dir_
+                f_dir_prev[0] = rk4_f(pos, L_square)
+
+                # Check if the ray hits the event horizon or the skymap
+                r = pos.norm()
                 if r < self.scene.blackhole_r:
                     event_horizon_hit = True
                     break
