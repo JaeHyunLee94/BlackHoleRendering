@@ -26,7 +26,7 @@ def main():
         "-pov", "-p", nargs=3, metavar=('x', 'y', 'z'),
         help="Camera position in cartesian coordinate (default: [1,1,1] )",
         type=float,
-        default=[1.0, 1.0, 1.0]
+        default=[0, 3.0, 0.2]
     )
 
     # Focal length (float)
