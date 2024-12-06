@@ -41,6 +41,7 @@ class Skymap:
         x, y, z = D[0], D[1], D[2]
 
         # Compute spherical coordinates
+        z = ti.min(ti.max(z, -1.0), 1.0)  # Ensure z is within [-1, 1]
         theta = ti.acos(z)
         phi = ti.atan2(y, x)
         if phi < 0:

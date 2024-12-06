@@ -1,6 +1,7 @@
 import numpy as np
 import taichi as ti
 
+
 @ti.data_oriented
 class Camera:
     def __init__(self, pos, focal_length, look_at, img_res, up=np.array([0, 0, 1], dtype=np.float32), fov=90):
@@ -45,17 +46,17 @@ class Camera:
         # Starting point (top-left corner) of the image plane in world coordinates
         image_plane_center = ti.Vector(self._pos) + ti.Vector(self._forward) * self._focal_length
         top_left = (
-            image_plane_center
-            - (image_plane_width / 2.0) * ti.Vector(self._right)
-            + (image_plane_height / 2.0) * ti.Vector(self._up)
+                image_plane_center
+                - (image_plane_width / 2.0) * ti.Vector(self._right)
+                + (image_plane_height / 2.0) * ti.Vector(self._up)
         )
 
         for i, j in ti.ndrange(self._image_width, self._image_height):
             # Compute the position of the current pixel on the image plane
             pixel_pos = (
-                top_left
-                + (i + 0.5) * pixel_width * ti.Vector(self._right)
-                - (j + 0.5) * pixel_height * ti.Vector(self._up)
+                    top_left
+                    + (i + 0.5) * pixel_width * ti.Vector(self._right)
+                    - (j + 0.5) * pixel_height * ti.Vector(self._up)
             )
             # Direction from the camera position to the pixel position
             direction = pixel_pos - ti.Vector(self._pos)
@@ -66,6 +67,41 @@ class Camera:
             self.directions[i, j] = direction
 
     @ti.kernel
+    def generate_rays_perpendicular(self):
+        # Image plane dimensions based on the field of view
+        fov_radians = (self._fov / 2.0) * (3.141592653589793 / 180.0)  # Convert degrees to radians
+        image_plane_height = 2.0 * self._focal_length * ti.tan(fov_radians)
+        image_plane_width = image_plane_height * self._aspect_ratio
+
+        # Pixel size in world units
+        pixel_width = image_plane_width / self._image_width
+        pixel_height = image_plane_height / self._image_height
+
+        # Compute the center and top-left corner of the image plane
+        image_plane_center = ti.Vector(self._pos) + ti.Vector(self._forward) * self._focal_length
+        top_left = (
+                image_plane_center
+                - (image_plane_width / 2.0) * ti.Vector(self._right)
+                + (image_plane_height / 2.0) * ti.Vector(self._up)
+        )
+
+        # All rays will share the same direction, which is the forward direction.
+        ray_direction = ti.Vector(self._forward).normalized()
+
+        for i, j in ti.ndrange(self._image_width, self._image_height):
+            # Compute the position of the current pixel on the image plane
+            pixel_pos = (
+                    top_left
+                    + (i + 0.5) * pixel_width * ti.Vector(self._right)
+                    - (j + 0.5) * pixel_height * ti.Vector(self._up)
+            )
+
+            # For an orthographic (parallel) projection, the ray's origin is at pixel_pos,
+            # and the direction is simply the camera's forward direction.
+            self.positions[i, j] = pixel_pos
+            self.directions[i, j] = ray_direction
+
+    @ti.kernel
     def render_scene(self, colors: ti.template()):
         # Assign the colors from the Taichi field `colors` to the image
         for i, j in self.image:
@@ -74,6 +110,7 @@ class Camera:
     def get_all_rays(self):
         # Call the Taichi kernel to generate rays
         self.generate_rays()
+        # self.generate_rays_perpendicular()
         return self.positions, self.directions
 
     def render(self, colors):

@@ -62,7 +62,7 @@ def main():
         type=str,
         default='euler',
         choices=["euler", "rk4", "leapfrog", "ab2"],
-        help="Integrators: 'euler', 'rk4', 'leapfrog'. (default: rk4)"
+        help="Integrators: 'euler', 'rk4', 'leapfrog'. (default: euler)"
     )
 
     # GPU or CPU flag (use '--gpu' for GPU, default is CPU)
@@ -97,11 +97,10 @@ def main():
     positions, directions = my_camera.get_all_rays()
 
     # Initialize the Scene
-
-    scene = Scene(blackhole_r=ti.cast(1.0, ti.f32), accretion_r1=ti.cast(1.5, ti.f32),
+    scene = Scene(blackhole_r=ti.cast(1.0, ti.f32), accretion_r1=ti.cast(1.2, ti.f32),
                   accretion_r2=ti.cast(2.0, ti.f32), accretion_temp=ti.cast(400., ti.f32),
                   skymap=Skymap(args.texture, r_max=10))
-    my_solver = Solver(scene, h=ti.cast(0.5, ti.f32))
+    my_solver = Solver(scene, h=ti.cast(0.1, ti.f32))
 
     # Initialize Taichi fields
     image_width = my_camera._image_width
