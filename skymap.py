@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image
 import taichi as ti
 
+
 @ti.data_oriented
 class Skymap:
     def __init__(self, image_path, r_max):
@@ -41,7 +42,7 @@ class Skymap:
         x, y, z = D[0], D[1], D[2]
 
         # Compute spherical coordinates
-        z = ti.min(ti.max(z, -1.0), 1.0)  # Ensure z is within [-1, 1]
+
         theta = ti.acos(z)
         phi = ti.atan2(y, x)
         if phi < 0:
@@ -54,7 +55,7 @@ class Skymap:
         # Map (u, v) to texture pixel coordinates
         tex_u = ti.cast(u * (self.img_width - 1), ti.i32)
         # tex_v = ti.cast((1 - v) * (self.img_height - 1), ti.i32)  # Flip v to match image coordinate system
-        tex_v = ti.cast(v * (self.img_height - 1), ti.i32) # Test
+        tex_v = ti.cast(v * (self.img_height - 1), ti.i32)  # Test
 
         # Ensure indices are within bounds
         tex_u = ti.min(ti.max(tex_u, 0), self.img_width - 1)

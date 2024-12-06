@@ -46,10 +46,10 @@ class Solver:
                 new_dir = dir_ + self.h * constant * pos
 
                 # Check for event horizon or accretion disk hit
-                if (pos[2] > 0 and new_pos[2] < 0) or (pos[2] < 0 and new_pos[2] > 0):
+                if (pos[2] > 0 > new_pos[2]) or (pos[2] < 0 < new_pos[2]):
                     t = new_pos[2] / (new_pos[2] - pos[2] + 1e-7)
                     ad_hit_coord = t * pos[:2] + (1 - t) * new_pos[:2]
-                    if ad_hit_coord.norm() <= self.scene.accretion_r2 and ad_hit_coord.norm() >= self.scene.accretion_r1:
+                    if self.scene.accretion_r2 >= ad_hit_coord.norm() >= self.scene.accretion_r1:
                         accretion_disk_hit = True
 
                 pos = new_pos
