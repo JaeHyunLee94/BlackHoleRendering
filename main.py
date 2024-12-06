@@ -23,6 +23,12 @@ def main():
 
     # Camera position
     parser.add_argument(
+        "-Ls",
+        help="Retrieve L stream",
+        action='store_true'
+    )
+
+    parser.add_argument(
         "-pov", "-p", nargs=3, metavar=('x', 'y', 'z'),
         help="Camera position in cartesian coordinate (default: [1,1,1] )",
         type=float,
@@ -89,48 +95,61 @@ def main():
         resol = np.array([1920, 1080])
 
     print('Welcome to Math/CS714 Project')
+    
+    if args.Ls :
+        hs = [ti.cast(0.001, ti.f32), ti.cast(0.003, ti.f32), ti.cast(0.01, ti.f32), ti.cast(0.03, ti.f32)]
+    else :
+        hs = [ti.cast(0.01, ti.f32)]
 
-    # Ensure that position and look_at are float32
-    my_camera = Camera(np.array(args.pov, dtype=np.float32), np.float32(args.focal),
-                       np.array([0, 0, 0], dtype=np.float32), resol, fov=np.float32(args.fov % 180))
-    print('Generating rays...')
-    positions, directions = my_camera.get_all_rays()
+    for _h in hs:
+        # Ensure that position and look_at are float32
+        my_camera = Camera(np.array(args.pov, dtype=np.float32), np.float32(args.focal),
+                        np.array([0, 0, 0], dtype=np.float32), resol, fov=np.float32(args.fov % 180))
+        print('Generating rays...')
+        positions, directions = my_camera.get_all_rays()
 
-    # Initialize the Scene
-    scene = Scene(blackhole_r=ti.cast(1.0, ti.f32), accretion_r1=ti.cast(1.2, ti.f32),
-                  accretion_r2=ti.cast(2.5, ti.f32), accretion_temp=ti.cast(400., ti.f32),
-                  skymap=Skymap(args.texture, r_max=10))
-    my_solver = Solver(scene, h=ti.cast(0.1, ti.f32))
+        # Initialize the Scene
+        scene = Scene(blackhole_r=ti.cast(1.0, ti.f32), accretion_r1=ti.cast(1.2, ti.f32),
+                    accretion_r2=ti.cast(2.5, ti.f32), accretion_temp=ti.cast(400., ti.f32),
+                    skymap=Skymap(args.texture, r_max=10))
+        my_solver = Solver(scene, h=_h, get_Ls=args.Ls)
 
-    # Initialize Taichi fields
-    image_width = my_camera._image_width
-    image_height = my_camera._image_height
+        # Initialize Taichi fields
+        image_width = my_camera._image_width
+        image_height = my_camera._image_height
 
-    colors = ti.Vector.field(3, dtype=ti.f32, shape=(image_width, image_height))
-    colors.fill(0.0)
+        colors = ti.Vector.field(3, dtype=ti.f32, shape=(image_width, image_height))
+        colors.fill(0.0)
 
-    print('Solving ODE...')
-    if args.integrator == "euler":
-        my_solver.solve_forward_euler(positions, directions, colors)
-    elif args.integrator == 'rk4':
-        my_solver.solve_rk4(positions, directions, colors)
-    elif args.integrator == 'leapfrog':
-        my_solver.solve_leapfrog(positions, directions, colors)
-    elif args.integrator == 'ab2':
-        my_solver.solve_ab2(positions, directions, colors)
-    elif args.integrator == 'am4':
-        my_solver.solve_am4(positions, directions, colors)
+        print('Solving ODE...')
+        if args.integrator == "euler":
+            my_solver.solve_forward_euler(positions, directions, colors)
+        elif args.integrator == 'rk4':
+            my_solver.solve_rk4(positions, directions, colors)
+        elif args.integrator == 'leapfrog':
+            my_solver.solve_leapfrog(positions, directions, colors)
+        elif args.integrator == 'ab2':
+            my_solver.solve_ab2(positions, directions, colors)
+        elif args.integrator == 'am4':
+            my_solver.solve_am4(positions, directions, colors)
 
-    # Rendering the image from the rays
-    print('Rendering...')
-    img = my_camera.render(colors)
-    print('Image resolution: ', img.shape)
+        if args.Ls :
+            Ls = my_solver.Ls_field.to_numpy()
+            plt.plot(Ls)
+        else :
+            # Rendering the image from the rays
+            print('Rendering...')
+            img = my_camera.render(colors)
+            print('Image resolution: ', img.shape)
 
-    plt.imshow(np.transpose(img, (1, 0, 2)))
-    plt.axis('off')
-    plt.savefig(args.output)
-    plt.show()
-
+            plt.imshow(np.transpose(img, (1, 0, 2)))
+            plt.axis('off')
+            plt.savefig(args.output)
+            plt.show()
+    if args.Ls:
+        plt.legend(['h=0.001', 'h=0.003', 'h=0.01', 'h=0.03'])
+        plt.savefig(f'Ls_{args.integrator}.png')
+        plt.close()
 
 if __name__ == '__main__':
     main()

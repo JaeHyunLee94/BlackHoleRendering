@@ -12,9 +12,11 @@ def rk4_f(pos, L_square):
 
 @ti.data_oriented
 class Solver:
-    def __init__(self, scene: Scene, h):
+    def __init__(self, scene: Scene, h, get_Ls):
         self.scene = scene
         self.h = h
+        self.get_Ls = get_Ls
+        self.Ls_field = ti.field(dtype=ti.f32, shape=64)
 
     # Forward Euler method
     @ti.kernel
@@ -31,6 +33,7 @@ class Solver:
             event_horizon_hit = False
             accretion_disk_hit = False
 
+            tmp = 0
             while True:
                 new_pos = pos + self.h * dir_
                 r = new_pos.norm()
@@ -46,13 +49,17 @@ class Solver:
 
                 pos = new_pos
                 dir_ = new_dir
-            
+
+                if tmp < 64 and self.get_Ls:
+                    new_L = dir_.cross(pos).norm() ** 2
+                    self.Ls_field[tmp] = new_L
+                    tmp += 1
+
                 if r < self.scene.blackhole_r:
                     event_horizon_hit = True
                     break
                 elif r > self.scene.skymap.r_max:
                     break
-
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
             else:
@@ -74,6 +81,8 @@ class Solver:
 
             event_horizon_hit = False
             accretion_disk_hit = False
+
+            tmp = 0
             while True:
                 # RK4 integration for position
                 k1_pos = self.h * dir_
@@ -109,6 +118,11 @@ class Solver:
                 pos = new_pos
                 dir_ = new_dir_
 
+                if tmp < 64 and self.get_Ls:
+                    new_L = dir_.cross(pos).norm() ** 2
+                    self.Ls_field[tmp] = new_L
+                    tmp += 1
+
             if event_horizon_hit:
                 colors[i, j] = ti.Vector([0.0, 0.0, 0.0])
             else:
@@ -136,6 +150,7 @@ class Solver:
 
             event_horizon_hit = False
             accretion_disk_hit = False
+            tmp = 0
             while True:
                 # Full-step position update
                 new_pos = pos + self.h * dir_
@@ -156,6 +171,12 @@ class Solver:
 
                 pos = new_pos
                 dir_ = new_dir_
+
+
+                if tmp < 64 and self.get_Ls:
+                    new_L = dir_.cross(pos).norm() ** 2
+                    self.Ls_field[tmp] = new_L
+                    tmp += 1
 
                 # Check if the ray hits the event horizon or the skymap
                 r = ti.sqrt(pos.dot(pos))
@@ -195,6 +216,7 @@ class Solver:
 
             event_horizon_hit = False
             accretion_disk_hit = False
+            tmp = 0
             while True:
                 # Compute f_n
                 f_pos_n = dir_
@@ -214,6 +236,12 @@ class Solver:
 
                 pos = new_pos
                 dir_ = new_dir_              
+
+
+                if tmp < 64 and self.get_Ls:
+                    new_L = dir_.cross(pos).norm() ** 2
+                    self.Ls_field[tmp] = new_L
+                    tmp += 1
 
                 # Update previous function evaluations
                 f_pos_prev = f_pos_n
@@ -285,6 +313,7 @@ class Solver:
             # Start Adams-Moulton 4-step method
             event_horizon_hit = False
             accretion_disk_hit = False
+            tmp = 0
             while True:
                 # Predictor step: Adams-Bashforth 4-step
                 f_pos_predictor = ti.Vector([0.0, 0.0, 0.0])
@@ -322,6 +351,12 @@ class Solver:
 
                 pos = new_pos
                 dir_ = new_dir_ 
+
+
+                if tmp < 64 and self.get_Ls:
+                    new_L = dir_.cross(pos).norm() ** 2
+                    self.Ls_field[tmp] = new_L
+                    tmp += 1
 
                 # Shift previous function evaluations
                 for k in ti.static(range(3)):  # Reverse logic manually
