@@ -15,7 +15,7 @@ class Solver:
     def rk4_f(self, pos, L_square):
         r = pos.norm()
         one_point_five = ti.cast(1.5, ti.f32)
-        return - (L_square * pos * one_point_five) / (r ** 6)
+        return - (L_square * pos * one_point_five) / (r ** 5)
 
     @ti.func
     def determine_color(self, event_horizon_hit, accretion_disk_hit, pos, accretion_disk_hit_x, accretion_disk_hit_y):
@@ -56,7 +56,7 @@ class Solver:
             while True:
                 new_pos = pos + self.h * dir_
                 r = new_pos.norm()
-                constant = - (L_square * one_point_five) / (r ** 6)
+                constant = - (L_square * one_point_five) / (r ** 5)
                 new_dir = dir_ + self.h * constant * pos
 
                 # Check for event horizon or accretion disk hit
@@ -147,7 +147,7 @@ class Solver:
 
             # Half-step velocity update
             r = pos.norm()
-            constant = - (L_square * one_point_five) / (r ** 6)
+            constant = - (L_square * one_point_five) / (r ** 5)
             dir_ = dir_ + 0.5 * self.h * constant * pos
 
             event_horizon_hit = False
@@ -158,7 +158,7 @@ class Solver:
 
                 # Recalculate constants with new position
                 r = new_pos.norm()
-                constant = - (L_square * one_point_five) / (r ** 6)
+                constant = - (L_square * one_point_five) / (r ** 5)
 
                 # Full-step velocity update
                 new_dir_ = dir_ + self.h * constant * pos
@@ -200,7 +200,7 @@ class Solver:
             # Initialize f_{n-1}
             f_pos_prev = dir_
             r = pos.norm()
-            constant = - (L_square * one_point_five) / (r ** 6)
+            constant = - (L_square * one_point_five) / (r ** 5)
             f_dir_prev = constant * pos
 
             event_horizon_hit = False
@@ -209,7 +209,7 @@ class Solver:
                 # Compute f_n
                 f_pos_n = dir_
                 r = pos.norm()
-                constant = - (L_square * one_point_five) / (r ** 6)
+                constant = - (L_square * one_point_five) / (r ** 5)
                 f_dir_n = constant * pos
 
                 new_pos = pos + self.h * (three_over_two * f_pos_n - one_over_two * f_pos_prev)
