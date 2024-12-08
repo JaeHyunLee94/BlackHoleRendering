@@ -147,10 +147,24 @@ def main():
     img = my_camera.render(colors)
     print('Image resolution: ', img.shape)
 
+    # plt.imshow(np.transpose(img, (1, 0, 2)))
+    # plt.axis('off')
+    # plt.savefig(args.output, bbox_inches='tight', pad_inches=0)
+    # plt.show()
+    # Determine the resolution based on user input
+    if args.resolution == '4k':
+        img_width, img_height = 3840, 2160  # 4K resolution
+    else:  # 'fhd'
+        img_width, img_height = 1920, 1080  # Full HD resolution
+
+    # Plot and save the figure
+    plt.figure(figsize=(img_width / 100, img_height / 100), dpi=100)
     plt.imshow(np.transpose(img, (1, 0, 2)))
     plt.axis('off')
-    plt.savefig(args.output)
-    plt.show()
+
+    # Save the figure with the appropriate resolution
+    plt.savefig(args.output, dpi=100, bbox_inches='tight', pad_inches=0)
+    plt.close()
 
 
 if __name__ == '__main__':
