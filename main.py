@@ -80,7 +80,21 @@ def main():
     # Texture file path (string)
     parser.add_argument("-output", "-o", type=str,
                         default='result.png',
-                        help="Output file name. (deafult: result.png)")
+                        help="Output file name. (default: result.png)")
+
+    # time step size
+    parser.add_argument("-lamb", type=float,
+                        default=0.1,
+                        help="time step size. (default: 0.1)")
+
+    # accretion r1 r2
+    parser.add_argument("-ar1", type=float,
+                        default=2,
+                        help="inner radius of accretion disk (default: 2)")
+    # accretion r1 r2
+    parser.add_argument("-ar2", type=float,
+                        default=6,
+                        help="outer radius of accretion disk (default: 6)")
 
     args = parser.parse_args()
     if args.cpu:
@@ -102,12 +116,12 @@ def main():
     positions, directions = my_camera.get_all_rays()
 
     # Initialize the Scene
-    scene = Scene(blackhole_r=ti.cast(1.0, ti.f32), accretion_r1=ti.cast(2, ti.f32),
-                  accretion_r2=ti.cast(6, ti.f32), accretion_temp=ti.cast(400., ti.f32),
+    scene = Scene(blackhole_r=ti.cast(1.0, ti.f32), accretion_r1=ti.cast(args.ar1, ti.f32),
+                  accretion_r2=ti.cast(args.ar2, ti.f32), accretion_temp=ti.cast(400., ti.f32),
                   accretion_alpha=ti.cast(0.9, ti.f32),
                   skymap=Skymap(args.texture, r_max=10))
     scene.set_accretion_disk_texture(args.at)
-    my_solver = Solver(scene, h=ti.cast(0.1, ti.f32))
+    my_solver = Solver(scene, h=ti.cast(args.lamb, ti.f32))
 
     # Initialize Taichi fields
     image_width = my_camera._image_width

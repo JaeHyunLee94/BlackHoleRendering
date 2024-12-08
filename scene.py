@@ -47,36 +47,42 @@ class Scene:
 
     @ti.func
     def get_accretion_disk_color_ti(self, x, y):
-
-        # Compute squared distance from the origin in the x-y plane
-        r_squared = x ** 2 + y ** 2
-        r = ti.sqrt(r_squared)
         color = ti.Vector([0.0, 0.0, 0.0])
+        if self.texture_field != None:
 
-        # Check if the ray falls within the specified disk
-        if self.accretion_r1 < r < self.accretion_r2:
-            # Compute spherical coordinates
+            # Compute squared distance from the origin in the x-y plane
+            r_squared = x ** 2 + y ** 2
+            r = ti.sqrt(r_squared)
+            color = ti.Vector([0.0, 0.0, 0.0])
 
-            phi = ti.atan2(y, x)
-            if phi < 0:
-                phi += 2 * ti.math.pi  # Use Taichi's pi
+            # Check if the ray falls within the specified disk
+            if self.accretion_r1 < r < self.accretion_r2:
+                # Compute spherical coordinates
 
-            # Compute texture coordinates (u, v)
-            u = phi / (2 * ti.math.pi)
-            v = (r - self.accretion_r1) / (self.accretion_r2 - self.accretion_r1)
+                phi = ti.atan2(y, x)
+                if phi < 0:
+                    phi += 2 * ti.math.pi  # Use Taichi's pi
 
-            # Map (u, v) to texture pixel coordinates
-            tex_u = ti.cast(u * (self.img_width - 1), ti.i32)
-            tex_v = ti.cast(v * (self.img_height - 1), ti.i32)
+                # Compute texture coordinates (u, v)
+                u = phi / (2 * ti.math.pi)
+                v = (r - self.accretion_r1) / (self.accretion_r2 - self.accretion_r1)
 
-            # Ensure indices are within bounds
-            tex_u = ti.min(ti.max(tex_u, 0), self.img_width - 1)
-            tex_v = ti.min(ti.max(tex_v, 0), self.img_height - 1)
+                # Map (u, v) to texture pixel coordinates
+                tex_u = ti.cast(u * (self.img_width - 1), ti.i32)
+                tex_v = ti.cast(v * (self.img_height - 1), ti.i32)
 
-            # Return color from the texture
-            color = self.texture_field[tex_v, tex_u]
+                # Ensure indices are within bounds
+                tex_u = ti.min(ti.max(tex_u, 0), self.img_width - 1)
+                tex_v = ti.min(ti.max(tex_v, 0), self.img_height - 1)
+
+                # Return color from the texture
+                color = self.texture_field[tex_v, tex_u]
+            else:
+                # Return a default or background color if outside the disk
+                print("Outside the accretion disk")
+                color = ti.Vector([0.0, 0.0, 0.0])  # Black or any desired background color
+
         else:
-            # Return a default or background color if outside the disk
-            print("Outside the accretion disk")
-            color = ti.Vector([0.0, 0.0, 0.0])  # Black or any desired background color
+            color = ti.Vector([1.0, 1.0, 1.0])
+
         return color
