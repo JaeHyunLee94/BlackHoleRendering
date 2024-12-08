@@ -118,7 +118,7 @@ def main():
     # Initialize the Scene
     scene = Scene(blackhole_r=ti.cast(1.0, ti.f32), accretion_r1=ti.cast(args.ar1, ti.f32),
                   accretion_r2=ti.cast(args.ar2, ti.f32), accretion_temp=ti.cast(400., ti.f32),
-                  accretion_alpha=ti.cast(0.9, ti.f32),
+                  accretion_alpha=ti.cast(1, ti.f32),
                   skymap=Skymap(args.texture, r_max=10))
     scene.set_accretion_disk_texture(args.at)
     my_solver = Solver(scene, h=ti.cast(args.lamb, ti.f32))

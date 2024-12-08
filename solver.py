@@ -50,9 +50,6 @@ class Solver:
             L_square = dir_.cross(pos).norm() ** 2
 
             event_horizon_hit = False
-            accretion_disk_hit = False
-            accretion_disk_hit_x = 0.0
-            accretion_disk_hit_y = 0.0
             while True:
                 new_pos = pos + self.h * dir_
                 r = new_pos.norm()
@@ -61,16 +58,13 @@ class Solver:
 
                 # Check for event horizon or accretion disk hit
 
-                if (pos[2] > 0 > new_pos[2]) or (pos[2] < 0 < new_pos[2]):
-                    t = -pos[2] / (new_pos[2] - pos[2] + 1e-7)
+                if pos[2] * new_pos[2] < 0:
+                    t = -pos[2] / (new_pos[2] - pos[2])  # remove the +1e-7
                     ad_hit_coord = pos[:2] + t * (new_pos[:2] - pos[:2])
 
                     if self.scene.accretion_r2 >= ad_hit_coord.norm() >= self.scene.accretion_r1:
-                        # colors[i, j] += self.scene.accretion_alpha * self.scene.get_accretion_disk_color_ti(
-                        #     ad_hit_coord[0], ad_hit_coord[1])
-                        accretion_disk_hit = True
-                        accretion_disk_hit_x = ad_hit_coord[0]
-                        accretion_disk_hit_y = ad_hit_coord[1]
+                        colors[i, j] = self.scene.get_accretion_disk_color_ti(
+                            ad_hit_coord[0], ad_hit_coord[1]) + colors[i, j]
 
                 pos = new_pos
                 dir_ = new_dir
@@ -81,13 +75,21 @@ class Solver:
                 elif r > self.scene.skymap.r_max:
                     break
 
-            colors[i, j] = self.determine_color(event_horizon_hit, accretion_disk_hit, pos, accretion_disk_hit_x,
-                                                accretion_disk_hit_y)
+            if event_horizon_hit:
+                colors[i, j] = ti.Vector(
+                    [0.0, 0.0, 0.0]) + self.scene.accretion_alpha * colors[i, j]  # Black for event horizon
+            else:
+                # Get the skymap color based on the ray's position
+                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(
+                    pos) + self.scene.accretion_alpha * colors[i, j]
+
+            colors[i, j] = ti.math.clamp(colors[i, j], 0.0, 1.0)
+
 
     # Runge-Kutta 4-step method
     @ti.kernel
     def solve_rk4(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
-        ad_hit_coord = ti.Vector([0.0, 0.0])
+
 
         for i, j in positions:
             pos = positions[i, j]
@@ -114,11 +116,13 @@ class Solver:
                 new_dir_ = dir_ + (k1_dir + 2 * k2_dir + 2 * k3_dir + k4_dir) / 6
 
                 # Check for event horizon or accretion disk hit
-                if (pos[2] > 0 > new_pos[2]) or (pos[2] < 0 < new_pos[2]):
-                    t = new_pos[2] / (new_pos[2] - pos[2])
-                    ad_hit_coord = t * pos[:2] + (1 - t) * new_pos[:2]
+                if pos[2] * new_pos[2] < 0:
+                    t = -pos[2] / (new_pos[2] - pos[2])  # remove the +1e-7
+                    ad_hit_coord = pos[:2] + t * (new_pos[:2] - pos[:2])
+
                     if self.scene.accretion_r2 >= ad_hit_coord.norm() >= self.scene.accretion_r1:
-                        accretion_disk_hit = True
+                        colors[i, j] = self.scene.get_accretion_disk_color_ti(
+                            ad_hit_coord[0], ad_hit_coord[1]) + colors[i, j]
 
                 # Check if the ray hits the event horizon or the skymap
                 r = pos.norm()
@@ -131,14 +135,20 @@ class Solver:
                 pos = new_pos
                 dir_ = new_dir_
 
-            colors[i, j] = self.determine_color(event_horizon_hit, accretion_disk_hit, pos, ad_hit_coord[0],
-                                                ad_hit_coord[1])
+            if event_horizon_hit:
+                colors[i, j] = ti.Vector(
+                    [0.0, 0.0, 0.0]) + self.scene.accretion_alpha * colors[i, j]  # Black for event horizon
+            else:
+                # Get the skymap color based on the ray's position
+                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(
+                    pos) + self.scene.accretion_alpha * colors[i, j]
+
+            colors[i, j] = ti.math.clamp(colors[i, j], 0.0, 1.0)
 
     # Leapfrog method
     @ti.kernel
     def solve_leapfrog(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
         one_point_five = ti.cast(1.5, ti.f32)
-        ad_hit_coord = ti.Vector([0.0, 0.0])
 
         for i, j in positions:
             pos = positions[i, j]
@@ -164,11 +174,13 @@ class Solver:
                 new_dir_ = dir_ + self.h * constant * pos
 
                 # Check for event horizon or accretion disk hit
-                if (pos[2] > 0 > new_pos[2]) or (pos[2] < 0 < new_pos[2]):
-                    t = new_pos[2] / (new_pos[2] - pos[2])
-                    ad_hit_coord = t * pos[:2] + (1 - t) * new_pos[:2]
+                if pos[2] * new_pos[2] < 0:
+                    t = -pos[2] / (new_pos[2] - pos[2])  # remove the +1e-7
+                    ad_hit_coord = pos[:2] + t * (new_pos[:2] - pos[:2])
+
                     if self.scene.accretion_r2 >= ad_hit_coord.norm() >= self.scene.accretion_r1:
-                        accretion_disk_hit = True
+                        colors[i, j] = self.scene.get_accretion_disk_color_ti(
+                            ad_hit_coord[0], ad_hit_coord[1]) + colors[i, j]
 
                 pos = new_pos
                 dir_ = new_dir_
@@ -181,8 +193,15 @@ class Solver:
                 elif r > self.scene.skymap.r_max:
                     break
 
-            colors[i, j] = self.determine_color(event_horizon_hit, accretion_disk_hit, pos, ad_hit_coord[0],
-                                                ad_hit_coord[1])
+            if event_horizon_hit:
+                colors[i, j] = ti.Vector(
+                    [0.0, 0.0, 0.0]) + self.scene.accretion_alpha * colors[i, j]  # Black for event horizon
+            else:
+                # Get the skymap color based on the ray's position
+                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(
+                    pos) + self.scene.accretion_alpha * colors[i, j]
+
+            colors[i, j] = ti.math.clamp(colors[i, j], 0.0, 1.0)
 
     # Adams-Bashforth 2-step method
     @ti.kernel
@@ -216,11 +235,13 @@ class Solver:
                 new_dir_ = dir_ + self.h * (three_over_two * f_dir_n - one_over_two * f_dir_prev)
 
                 # Check for event horizon or accretion disk hit
-                if (pos[2] > 0 > new_pos[2]) or (pos[2] < 0 < new_pos[2]):
-                    t = new_pos[2] / (new_pos[2] - pos[2])
-                    ad_hit_coord = t * pos[:2] + (1 - t) * new_pos[:2]
+                if pos[2] * new_pos[2] < 0:
+                    t = -pos[2] / (new_pos[2] - pos[2])  # remove the +1e-7
+                    ad_hit_coord = pos[:2] + t * (new_pos[:2] - pos[:2])
+
                     if self.scene.accretion_r2 >= ad_hit_coord.norm() >= self.scene.accretion_r1:
-                        accretion_disk_hit = True
+                        colors[i, j] = self.scene.get_accretion_disk_color_ti(
+                            ad_hit_coord[0], ad_hit_coord[1]) + colors[i, j]
 
                 pos = new_pos
                 dir_ = new_dir_
@@ -236,8 +257,15 @@ class Solver:
                 elif r > self.scene.skymap.r_max:
                     break
 
-            colors[i, j] = self.determine_color(event_horizon_hit, accretion_disk_hit, pos, ad_hit_coord[0],
-                                                ad_hit_coord[1])
+            if event_horizon_hit:
+                colors[i, j] = ti.Vector(
+                    [0.0, 0.0, 0.0]) + self.scene.accretion_alpha * colors[i, j]  # Black for event horizon
+            else:
+                # Get the skymap color based on the ray's position
+                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(
+                    pos) + self.scene.accretion_alpha * colors[i, j]
+
+            colors[i, j] = ti.math.clamp(colors[i, j], 0.0, 1.0)
 
     @ti.kernel
     def solve_am4(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
@@ -247,7 +275,6 @@ class Solver:
         coefficients_ab3 = ti.static([23 / 12.0, -16 / 12.0, 5 / 12.0])  # Adams-Bashforth 3-step
         coefficients_ab = ti.static([9 / 24.0, -19 / 24.0, 5 / 24.0, 1 / 24.0])  # Adams-Bashforth 4-step
         coefficients_am = ti.static([9 / 24.0, 19 / 24.0, -5 / 24.0, -1 / 24.0])  # Adams-Moulton
-        ad_hit_coord = ti.Vector([0.0, 0.0])
 
         for i, j in positions:
             pos = positions[i, j]
@@ -288,7 +315,7 @@ class Solver:
 
             # Start Adams-Moulton 4-step method
             event_horizon_hit = False
-            accretion_disk_hit = False
+
             while True:
                 # Predictor step: Adams-Bashforth 4-step
                 f_pos_predictor = ti.Vector([0.0, 0.0, 0.0])
@@ -318,11 +345,13 @@ class Solver:
                 new_dir_ = dir_ + self.h * f_dir_update
 
                 # Check for event horizon or accretion disk hit
-                if (pos[2] > 0 > new_pos[2]) or (pos[2] < 0 < new_pos[2]):
-                    t = new_pos[2] / (new_pos[2] - pos[2])
-                    ad_hit_coord = t * pos[:2] + (1 - t) * new_pos[:2]
+                if pos[2] * new_pos[2] < 0:
+                    t = -pos[2] / (new_pos[2] - pos[2])  # remove the +1e-7
+                    ad_hit_coord = pos[:2] + t * (new_pos[:2] - pos[:2])
+
                     if self.scene.accretion_r2 >= ad_hit_coord.norm() >= self.scene.accretion_r1:
-                        accretion_disk_hit = True
+                        colors[i, j] = self.scene.get_accretion_disk_color_ti(
+                            ad_hit_coord[0], ad_hit_coord[1]) + colors[i, j]
 
                 pos = new_pos
                 dir_ = new_dir_
@@ -343,5 +372,12 @@ class Solver:
                 elif r > self.scene.skymap.r_max:
                     break
 
-            colors[i, j] = self.determine_color(event_horizon_hit, accretion_disk_hit, pos, ad_hit_coord[0],
-                                                ad_hit_coord[1])
+            if event_horizon_hit:
+                colors[i, j] = ti.Vector(
+                    [0.0, 0.0, 0.0]) + self.scene.accretion_alpha * colors[i, j]  # Black for event horizon
+            else:
+                # Get the skymap color based on the ray's position
+                colors[i, j] = self.scene.skymap.get_color_from_ray_ti(
+                    pos) + self.scene.accretion_alpha * colors[i, j]
+
+            colors[i, j] = ti.math.clamp(colors[i, j], 0.0, 1.0)
