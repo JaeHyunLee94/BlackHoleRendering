@@ -17,12 +17,12 @@ def main():
     pov = [8, 3, 1]
     focal = 1.5
     fov = 75
-    sky_texture = 'texture/high_res/space_texture_high5.jpg'
-    accretion_texture = 'texture/high_res/space_texture_high5.jpg'
+    sky_texture = 'texture/high_res/space_texture_high3.jpg'
+    accretion_texture = 'texture/high_res/space_texture_high3.jpg'
     h = 0.01
     ar1 = 2
     ar2 = 6
-    num_frames = 60
+    num_frames = 600
     ti.init(arch=ti.gpu)
 
     resol = np.array([3840, 2160])
