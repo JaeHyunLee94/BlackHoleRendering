@@ -1,0 +1,16 @@
+[Taichi] version 1.7.2, llvm 15.0.7, commit 0131dce9, osx, python 3.10.11
+[Taichi] Starting on arch=metal
+Welcome to Math/CS714 Project
+Generating rays...
+Loaded texture with shape: (1011, 1600, 3)
+Loaded accretion disk texture with shape: (1011, 1600, 3)
+Solving ODE rk4...
+=========================================================================
+Kernel Profiler(count, default) @ METAL
+=========================================================================
+[      %     total   count |      min       avg       max   ] Kernel name
+-------------------------------------------------------------------------
+-------------------------------------------------------------------------
+[100.00%] Total execution time:   0.000 s   number of results: 0
+=========================================================================
+Rendering...

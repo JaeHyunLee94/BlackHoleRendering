@@ -79,7 +79,6 @@ class Scene:
                 color = self.texture_field[tex_v, tex_u]
             else:
                 # Return a default or background color if outside the disk
-                print("Outside the accretion disk")
                 color = ti.Vector([0.0, 0.0, 0.0])  # Black or any desired background color
 
         else:

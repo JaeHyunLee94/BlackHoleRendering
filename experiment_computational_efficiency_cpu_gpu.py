@@ -13,7 +13,7 @@ from camera import Camera
 from solver import Solver
 from skymap import Skymap
 from scene import Scene
-
+import io
 import taichi as ti
 
 
@@ -86,10 +86,13 @@ def main():
 
     # Initialize Taichi
     if args.cpu:
-        ti.init(arch=ti.cpu, cpu_max_num_threads=1)
+        ti.init(arch=ti.cpu, kernel_profiler=True) #cpu_max_num_threads=1
+        print(f"Maximum CPU threads (configured): {ti.cfg.cpu_max_num_threads}")
+
     else:
-        # On Apple Silicon, use Metal explicitly
-        ti.init(arch=ti.gpu)
+
+        ti.init(arch=ti.gpu, kernel_profiler=True)
+
 
         # Determine resolution
     if args.resolution == '4k':
@@ -137,10 +140,8 @@ def main():
     # integrators = ["euler", "rk4", "leapfrog", "ab2", "am4"]
     # lamb_values = [0.1, 0.05, 0.01, 0.001]
     h = 0.01
-    my_solver = Solver(scene, h=ti.cast(0.1, ti.f32))
     integrator = "rk4"
-
-    print(f"Running integrator: {integrator}, lambda: {h}")
+    my_solver = Solver(scene, h=ti.cast(h, ti.f32))
 
     # Reinitialize solver
 
@@ -150,26 +151,29 @@ def main():
     directions.from_numpy(original_directions)  # Reload original ray directions
 
     # Solve ODE
-    print('Solving ODE...')
-    if integrator == "euler":
-        my_solver.solve_forward_euler(positions, directions, colors)
-    elif integrator == 'rk4':
-        my_solver.solve_rk4(positions, directions, colors)
-    elif integrator == 'leapfrog':
-        my_solver.solve_leapfrog(positions, directions, colors)
-    elif integrator == 'ab2':
-        my_solver.solve_ab2(positions, directions, colors)
-    elif integrator == 'am4':
-        my_solver.solve_am4(positions, directions, colors)
+    print('Solving ODE rk4...')
+
+    # Clear kernel profiler data
+    ti.profiler.clear_kernel_profiler_info()
+
+    # Start profiling
+    # Run kernels
+    my_solver.solve_rk4(positions, directions, colors)
+    ti.sync()
+    # Print profiling results
+    ti.profiler.print_kernel_profiler_info()
+
+
 
     # Render and save
     print('Rendering...')
     img = my_camera.render(colors)
-    output_filename = f"experiment_lambda_size/result_{integrator}_lambda_{h}.png"
+    output_filename = f"experiment_computational_time_cpugpu/result_{integrator}_lambda_{h}.png"
     plt.figure(figsize=(img_width / 100, img_height / 100), dpi=100)
     plt.imshow(np.transpose(img, (1, 0, 2)))
     plt.axis('off')
     plt.savefig(output_filename, dpi=100, bbox_inches='tight', pad_inches=0)
+    plt.show()
     plt.close()
     print(f"Saved: {output_filename}")
 
