@@ -146,12 +146,6 @@ def main():
     print('Rendering...')
     img = my_camera.render(colors)
     print('Image resolution: ', img.shape)
-
-    # plt.imshow(np.transpose(img, (1, 0, 2)))
-    # plt.axis('off')
-    # plt.savefig(args.output, bbox_inches='tight', pad_inches=0)
-    # plt.show()
-    # Determine the resolution based on user input
     if args.resolution == '4k':
         img_width, img_height = 3840, 2160  # 4K resolution
     else:  # 'fhd'
