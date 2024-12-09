@@ -26,20 +26,20 @@ def main():
         "-pov", "-p", nargs=3, metavar=('x', 'y', 'z'),
         help="Camera position in cartesian coordinate (default: [1,1,1] )",
         type=float,
-        default=[0, 3.0, 0.2]
+        default=[6, 0, 0.5]
     )
 
     # Focal length (float)
     parser.add_argument("-focal", "-f", type=float,
-                        default=1.5,
-                        help="Focal length (default: 1.5)")
+                        default=1.8,
+                        help="Focal length (default: 1.8)")
 
     # Field of View (FoV) (float between 0 and 180)
     parser.add_argument(
         "-fov",
         type=float,
-        default=90,
-        help="Field of View (FoV) in degrees (float between 0 and 180) (default: 90)"
+        default=60,
+        help="Field of View (FoV) in degrees (float between 0 and 180) (default: 60)"
     )
 
     # Resolution (string: '4k' or 'fhd')
@@ -65,9 +65,9 @@ def main():
     parser.add_argument(
         "-integrator", "-i",
         type=str,
-        default='euler',
+        default='am4',
         choices=["euler", "rk4", "leapfrog", "ab2", "am4"],
-        help="Integrators: 'euler', 'rk4', 'leapfrog'. (default: euler)"
+        help="Integrators: 'euler', 'rk4', 'leapfrog'. (default: am4)"
     )
 
     # GPU or CPU flag (use '--gpu' for GPU, default is CPU)
@@ -83,9 +83,9 @@ def main():
                         help="Output file name. (default: result.png)")
 
     # time step size
-    parser.add_argument("-lamb", type=float,
-                        default=0.1,
-                        help="time step size. (default: 0.1)")
+    parser.add_argument("-step_size", "-s", type=float,
+                        default=0.011,
+                        help="time step size. (default: 0.01)")
 
     # accretion r1 r2
     parser.add_argument("-ar1", type=float,
@@ -93,7 +93,7 @@ def main():
                         help="inner radius of accretion disk (default: 2)")
     # accretion r1 r2
     parser.add_argument("-ar2", type=float,
-                        default=6,
+                        default=3.5,
                         help="outer radius of accretion disk (default: 6)")
 
     args = parser.parse_args()
@@ -121,7 +121,7 @@ def main():
                   accretion_alpha=ti.cast(1, ti.f32),
                   skymap=Skymap(args.texture, r_max=10))
     scene.set_accretion_disk_texture(args.at)
-    my_solver = Solver(scene, h=ti.cast(args.lamb, ti.f32))
+    my_solver = Solver(scene, h=ti.cast(args.step_size, ti.f32))
 
     # Initialize Taichi fields
     image_width = my_camera._image_width
