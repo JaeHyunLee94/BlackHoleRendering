@@ -85,11 +85,9 @@ class Solver:
 
             colors[i, j] = ti.math.clamp(colors[i, j], 0.0, 1.0)
 
-
     # Runge-Kutta 4-step method
     @ti.kernel
     def solve_rk4(self, positions: ti.template(), directions: ti.template(), colors: ti.template()):
-
 
         for i, j in positions:
             pos = positions[i, j]
@@ -97,7 +95,6 @@ class Solver:
             L_square = dir_.cross(pos).norm() ** 2
 
             event_horizon_hit = False
-            accretion_disk_hit = False
             while True:
                 # RK4 integration for position
                 k1_pos = self.h * dir_

@@ -164,7 +164,10 @@ def main():
 
     # Save the figure with the appropriate resolution
     plt.savefig(args.output, dpi=100, bbox_inches='tight', pad_inches=0)
+    plt.show()
     plt.close()
+
+
 
 
 if __name__ == '__main__':
