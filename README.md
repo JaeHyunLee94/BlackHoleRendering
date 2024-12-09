@@ -44,18 +44,18 @@ Render an image with custom camera settings and accretion disk parameters:
 
 | Argument      | Description                                                                                                  | Default                                 |
 |---------------|--------------------------------------------------------------------------------------------------------------|-----------------------------------------|
-| -pov or -p    | Camera position in Cartesian coordinates (x, y, z). Controls where the camera is placed.                     | [0, 3.0, 0.2]                          |
-| -focal or -f  | Focal length of the camera. Determines how "zoomed in" the image appears.                                    | 1.5                                     |
-| -fov          | Field of View in degrees (0-180). Wider FoV values result in more of the scene being captured.               | 90                                      |
+| -pov or -p    | Camera position in Cartesian coordinates (x, y, z). Controls where the camera is placed.                     | [6, 0, 0.5]                          |
+| -focal or -f  | Focal length of the camera. Determines how "zoomed in" the image appears.                                    | 1.8                                     |
+| -fov          | Field of View in degrees (0-180). Wider FoV values result in more of the scene being captured.               | 60                                      |
 | -resolution or -r | Resolution of the rendered image. Options are 4k (3840x2160) or fhd (1920x1080).                       | 4k                                      |
 | -texture or -t | Path to the Sky Box texture file. Specifies the background texture for the visualization.                   | texture/high_res/space_texture_high1.jpg |
 | -at           | Path to the accretion disk texture file. Specifies the visual texture for the black hole’s accretion disk.   | texture/ad/adisk.jpg                    |
 | -integrator or -i | Numerical integrator to use for solving light trajectories. Options: euler, rk4, leapfrog, ab2, am4.    | euler                                   |
 | --cpu         | Flag to use the CPU for rendering instead of the GPU. This may increase rendering time.                      | Disabled (GPU used by default)          |
 | -output or -o | Name of the output file for the rendered image.                                                              | result.png                              |
-| -lamb         | Time step size for integration. Smaller step sizes result in higher accuracy but slower computation.         | 0.1                                     |
+| -lamb         | Time step size for integration. Smaller step sizes result in higher accuracy but slower computation.         | 0.01                                     |
 | -ar1          | Inner radius of the accretion disk. Determines how close the accretion disk starts relative to the black hole.| 2                                       |
-| -ar2          | Outer radius of the accretion disk. Determines how far the accretion disk extends outward.                   | 6                                       |
+| -ar2          | Outer radius of the accretion disk. Determines how far the accretion disk extends outward.                   | 3                                       |
 
 
 ## References
