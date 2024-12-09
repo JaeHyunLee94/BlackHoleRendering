@@ -136,9 +136,10 @@ def main():
     # Lists of integrators and lambdas to experiment with
     # integrators = ["euler", "rk4", "leapfrog", "ab2", "am4"]
     # lamb_values = [0.1, 0.05, 0.01, 0.001]
-    my_solver = Solver(scene, h=ti.cast(0.1, ti.f32))
-    integrator = "am4"
     h = 0.001
+    integrator = "am4"
+    my_solver = Solver(scene, h=ti.cast(h, ti.f32))
+
     print(f"Running integrator: {integrator}, lambda: {h}")
 
     # Reinitialize solver
