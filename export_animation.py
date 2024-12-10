@@ -17,8 +17,8 @@ def main():
     pov = [8, 3, 1]
     focal = 1.5
     fov = 75
-    sky_texture = 'texture/high_res/space_texture_high3.jpg'
-    accretion_texture = 'texture/high_res/space_texture_high3.jpg'
+    sky_texture = 'texture/high_res/Marienplatz.jpg'
+    accretion_texture = 'texture/high_res/Marienplatz.jpg'
     h = 0.01
     ar1 = 2
     ar2 = 6
