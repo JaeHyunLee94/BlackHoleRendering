@@ -38,6 +38,10 @@ Render an image with custom camera settings and accretion disk parameters:
 
     python main.py -pov 0 5 2 -focal 2.0 -ar1 3 -ar2 8 -integrator am4 -output custom_blackhole.png
 
+Generate image sequence:
+
+    python export_animation.py
+
 
 
 ## Arguments
