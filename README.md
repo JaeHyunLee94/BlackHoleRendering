@@ -16,6 +16,7 @@ This project implements a ray-tracing-based rendering system for visualizing a S
   - Adams-Moulton 4-step (`am4`)
 - **Device Support**: Use GPU for faster rendering (default) or CPU via the `--cpu` flag.
 - **Output Customization**: Save rendered images with a specified filename.
+- **Accelerating code**: Used [Taichi](https://www.taichi-lang.org/) for GPU acceleration.
 
 ## Installation
 1. Clone the repository:
