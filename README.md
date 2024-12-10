@@ -1,6 +1,6 @@
 # BlackHole rendering
 
-![teaser](https://github.com/user-attachments/assets/abcb91df-2bf4-4ea0-a1de-f2f386025c3d)
+![gallery_teaser](https://github.com/user-attachments/assets/514cad6f-638f-497b-8c4f-c2053e914103)
 
 This project implements a ray-tracing-based rendering system for visualizing a Schwarzschild black hole with customizable settings. The rendering process is grounded in general relativity, allowing for realistic depictions of light bending and photon rings caused by the black hole's intense gravitational field. The implementation supports various numerical integrators and configurations to tailor the rendering experience.
 
@@ -57,6 +57,13 @@ Render an image with custom camera settings and accretion disk parameters:
 | -ar1          | Inner radius of the accretion disk. Determines how close the accretion disk starts relative to the black hole.| 2                                       |
 | -ar2          | Outer radius of the accretion disk. Determines how far the accretion disk extends outward.                   | 3                                       |
 
+## Gallery
+
+![gallery_1](https://github.com/user-attachments/assets/a3063396-3064-4edb-b363-0962e8878b1d)
+![gallery_2](https://github.com/user-attachments/assets/91e26930-475e-4925-af3f-e05f9430e3f8)
+![gallery_starry](https://github.com/user-attachments/assets/c554a73e-2294-44fa-bec8-d25ffe0dc08f)
+![gallery_3](https://github.com/user-attachments/assets/44994327-6654-4f37-9142-934404f5d208)
+![gallery_4](https://github.com/user-attachments/assets/d35795cf-b81e-447b-8a5e-9c8944487535)
 
 ## References
 ### Blogs
