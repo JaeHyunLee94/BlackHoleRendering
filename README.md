@@ -61,16 +61,16 @@ Render an image with custom camera settings and accretion disk parameters:
 
 <table>
   <tr>
-    <td><img src="https://github.com/user-attachments/assets/a3063396-3064-4edb-b363-0962e8878b1d" alt="gallery_1" width="300"></td>
-    <td><img src="https://github.com/user-attachments/assets/91e26930-475e-4925-af3f-e05f9430e3f8" alt="gallery_2" width="300"></td>
+    <td><img src="https://github.com/user-attachments/assets/a3063396-3064-4edb-b363-0962e8878b1d" alt="gallery_1" width="400"></td>
+    <td><img src="https://github.com/user-attachments/assets/91e26930-475e-4925-af3f-e05f9430e3f8" alt="gallery_2" width="400"></td>
   </tr>
   <tr>
-    <td><img src="https://github.com/user-attachments/assets/c554a73e-2294-44fa-bec8-d25ffe0dc08f" alt="gallery_starry" width="300"></td>
-    <td><img src="https://github.com/user-attachments/assets/44994327-6654-4f37-9142-934404f5d208" alt="gallery_3" width="300"></td>
+    <td><img src="https://github.com/user-attachments/assets/c554a73e-2294-44fa-bec8-d25ffe0dc08f" alt="gallery_starry" width="400"></td>
+    <td><img src="https://github.com/user-attachments/assets/44994327-6654-4f37-9142-934404f5d208" alt="gallery_3" width="400"></td>
   </tr>
   <tr>
-    <td><img src="https://github.com/user-attachments/assets/d35795cf-b81e-447b-8a5e-9c8944487535" alt="gallery_4" width="300"></td>
-    <td><img src="https://github.com/user-attachments/assets/e4307b0c-ac5f-4e3b-a215-8586c8ce49a3" alt="gallery_5" width="300"></td>
+    <td><img src="https://github.com/user-attachments/assets/d35795cf-b81e-447b-8a5e-9c8944487535" alt="gallery_4" width="400"></td>
+    <td><img src="https://github.com/user-attachments/assets/e4307b0c-ac5f-4e3b-a215-8586c8ce49a3" alt="gallery_5" width="400"></td>
   </tr>
 </table>
 
